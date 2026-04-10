@@ -5,13 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { GraduationCap, Eye, EyeOff } from "lucide-react";
+import PinInput from "@/components/PinInput";
+import { GraduationCap } from "lucide-react";
 
 const LoginPage = () => {
   const [nationalId, setNationalId] = useState("");
   const [pin, setPin] = useState("");
-  const [showPin, setShowPin] = useState(false);
   const [errors, setErrors] = useState<{ nationalId?: string; pin?: string; general?: string }>({});
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -61,40 +60,11 @@ const LoginPage = () => {
               />
               {errors.nationalId && <p className="text-destructive text-xs">{errors.nationalId}</p>}
             </div>
-            <div className="space-y-2">
-              <Label>Enter your 4 digit PIN</Label>
-              <div className="flex items-center gap-3">
-                <InputOTP
-                  maxLength={4}
-                  value={pin}
-                  onChange={(value) => { setPin(value); setErrors({}); }}
-                  textAlign="center"
-                >
-                  <InputOTPGroup className="gap-3">
-                    {[0, 1, 2, 3].map((i) => (
-                      <InputOTPSlot
-                        key={i}
-                        index={i}
-                        className={`w-14 h-14 rounded-xl border-none bg-muted text-lg font-semibold ${!showPin && pin[i] ? '[&>*:first-child]:text-transparent' : ''}`}
-                      />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
-                <button type="button" onClick={() => setShowPin(!showPin)} className="text-muted-foreground">
-                  {showPin ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-              {!showPin && pin.length > 0 && (
-                <div className="flex gap-3 -mt-14 pointer-events-none" aria-hidden>
-                  {[0, 1, 2, 3].map((i) => (
-                    <div key={i} className="w-14 h-14 flex items-center justify-center text-lg font-semibold">
-                      {pin[i] ? "•" : ""}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {errors.pin && <p className="text-destructive text-xs">{errors.pin}</p>}
-            </div>
+            <PinInput
+              value={pin}
+              onChange={(v) => { setPin(v); setErrors({}); }}
+              error={errors.pin}
+            />
             <Button type="submit" className="w-full">Login</Button>
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?{" "}
