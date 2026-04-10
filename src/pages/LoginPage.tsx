@@ -5,12 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { GraduationCap, Eye, EyeOff } from "lucide-react";
+import PinInput from "@/components/PinInput";
+import { GraduationCap } from "lucide-react";
 
 const LoginPage = () => {
   const [nationalId, setNationalId] = useState("");
   const [pin, setPin] = useState("");
-  const [showPin, setShowPin] = useState(false);
   const [errors, setErrors] = useState<{ nationalId?: string; pin?: string; general?: string }>({});
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -60,24 +60,11 @@ const LoginPage = () => {
               />
               {errors.nationalId && <p className="text-destructive text-xs">{errors.nationalId}</p>}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="pin">4-Digit PIN</Label>
-              <div className="relative">
-                <Input
-                  id="pin"
-                  type={showPin ? "text" : "password"}
-                  placeholder="••••"
-                  value={pin}
-                  onChange={(e) => { setPin(e.target.value.replace(/\D/g, "").slice(0, 4)); setErrors({}); }}
-                  inputMode="numeric"
-                  maxLength={4}
-                />
-                <button type="button" onClick={() => setShowPin(!showPin)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                  {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-              {errors.pin && <p className="text-destructive text-xs">{errors.pin}</p>}
-            </div>
+            <PinInput
+              value={pin}
+              onChange={(v) => { setPin(v); setErrors({}); }}
+              error={errors.pin}
+            />
             <Button type="submit" className="w-full">Login</Button>
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?{" "}

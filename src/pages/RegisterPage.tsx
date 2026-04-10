@@ -7,11 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GraduationCap, Eye, EyeOff } from "lucide-react";
+import PinInput from "@/components/PinInput";
+import { GraduationCap } from "lucide-react";
 
 const RegisterPage = () => {
   const [form, setForm] = useState({ nationalId: "", email: "", organization: "", pin: "", confirmPin: "" });
-  const [showPin, setShowPin] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -80,23 +80,18 @@ const RegisterPage = () => {
               </Select>
               {errors.organization && <p className="text-destructive text-xs">{errors.organization}</p>}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>PIN</Label>
-                <div className="relative">
-                  <Input type={showPin ? "text" : "password"} placeholder="••••" value={form.pin} onChange={(e) => set("pin", e.target.value.replace(/\D/g, "").slice(0, 4))} maxLength={4} inputMode="numeric" />
-                  <button type="button" onClick={() => setShowPin(!showPin)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                {errors.pin && <p className="text-destructive text-xs">{errors.pin}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label>Confirm PIN</Label>
-                <Input type={showPin ? "text" : "password"} placeholder="••••" value={form.confirmPin} onChange={(e) => set("confirmPin", e.target.value.replace(/\D/g, "").slice(0, 4))} maxLength={4} inputMode="numeric" />
-                {errors.confirmPin && <p className="text-destructive text-xs">{errors.confirmPin}</p>}
-              </div>
-            </div>
+            <PinInput
+              value={form.pin}
+              onChange={(v) => set("pin", v)}
+              error={errors.pin}
+            />
+            <PinInput
+              value={form.confirmPin}
+              onChange={(v) => set("confirmPin", v)}
+              label="Confirm PIN"
+              error={errors.confirmPin}
+              showToggle={false}
+            />
             <Button type="submit" className="w-full">Create Account</Button>
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{" "}
