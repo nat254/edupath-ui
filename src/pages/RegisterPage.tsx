@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { GraduationCap, Eye, EyeOff } from "lucide-react";
 
 const RegisterPage = () => {
@@ -80,22 +81,41 @@ const RegisterPage = () => {
               </Select>
               {errors.organization && <p className="text-destructive text-xs">{errors.organization}</p>}
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label>PIN</Label>
-                <div className="relative">
-                  <Input type={showPin ? "text" : "password"} placeholder="••••" value={form.pin} onChange={(e) => set("pin", e.target.value.replace(/\D/g, "").slice(0, 4))} maxLength={4} inputMode="numeric" />
-                  <button type="button" onClick={() => setShowPin(!showPin)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+            <div className="space-y-2">
+              <Label>Enter your 4 digit PIN</Label>
+              <div className="flex items-center gap-3">
+                <InputOTP maxLength={4} value={form.pin} onChange={(v) => set("pin", v)} textAlign="center">
+                  <InputOTPGroup className="gap-2">
+                    {[0, 1, 2, 3].map((i) => (
+                      <InputOTPSlot key={i} index={i} className={`w-12 h-12 rounded-xl border-none bg-muted text-base font-semibold ${!showPin && form.pin[i] ? '[&>*:first-child]:text-transparent' : ''}`} />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
+                <button type="button" onClick={() => setShowPin(!showPin)} className="text-muted-foreground">
+                  {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {!showPin && form.pin.length > 0 && (
+                <div className="flex gap-2 -mt-12 pointer-events-none" aria-hidden>
+                  {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className="w-12 h-12 flex items-center justify-center text-base font-semibold">{form.pin[i] ? "•" : ""}</div>
+                  ))}
                 </div>
-                {errors.pin && <p className="text-destructive text-xs">{errors.pin}</p>}
+              )}
+              {errors.pin && <p className="text-destructive text-xs">{errors.pin}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>Confirm PIN</Label>
+              <div className="flex items-center gap-3">
+                <InputOTP maxLength={4} value={form.confirmPin} onChange={(v) => set("confirmPin", v)} textAlign="center">
+                  <InputOTPGroup className="gap-2">
+                    {[0, 1, 2, 3].map((i) => (
+                      <InputOTPSlot key={i} index={i} className={`w-12 h-12 rounded-xl border-none bg-muted text-base font-semibold ${!showPin && form.confirmPin[i] ? '[&>*:first-child]:text-transparent' : ''}`} />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
               </div>
-              <div className="space-y-2">
-                <Label>Confirm PIN</Label>
-                <Input type={showPin ? "text" : "password"} placeholder="••••" value={form.confirmPin} onChange={(e) => set("confirmPin", e.target.value.replace(/\D/g, "").slice(0, 4))} maxLength={4} inputMode="numeric" />
-                {errors.confirmPin && <p className="text-destructive text-xs">{errors.confirmPin}</p>}
-              </div>
+              {errors.confirmPin && <p className="text-destructive text-xs">{errors.confirmPin}</p>}
             </div>
             <Button type="submit" className="w-full">Create Account</Button>
             <p className="text-center text-sm text-muted-foreground">
