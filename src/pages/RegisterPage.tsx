@@ -1,0 +1,112 @@
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { organizations } from "@/data/mockData";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { GraduationCap, Eye, EyeOff } from "lucide-react";
+
+const RegisterPage = () => {
+  const [form, setForm] = useState({ nationalId: "", email: "", organization: "", pin: "", confirmPin: "" });
+  const [showPin, setShowPin] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const { register } = useAuth();
+  const navigate = useNavigate();
+
+  const set = (field: string, value: string) => {
+    setForm((p) => ({ ...p, [field]: value }));
+    setErrors((p) => { const n = { ...p }; delete n[field]; delete n.general; return n; });
+  };
+
+  const validate = () => {
+    const e: Record<string, string> = {};
+    if (!/^\d{4,10}$/.test(form.nationalId)) e.nationalId = "Must be 4–10 digits";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Enter a valid email";
+    if (!form.organization) e.organization = "Select an organization";
+    if (!/^\d{4}$/.test(form.pin)) e.pin = "PIN must be 4 digits";
+    if (form.pin !== form.confirmPin) e.confirmPin = "PINs do not match";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = (ev: React.FormEvent) => {
+    ev.preventDefault();
+    if (!validate()) return;
+    const result = register({ nationalId: form.nationalId, email: form.email, organization: form.organization, pin: form.pin });
+    if (!result.success) {
+      setErrors({ general: result.error! });
+    } else {
+      navigate("/dashboard");
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="mx-auto mb-2 h-12 w-12 rounded-xl bg-primary flex items-center justify-center">
+            <GraduationCap className="h-7 w-7 text-primary-foreground" />
+          </div>
+          <CardTitle className="text-2xl">Create Account</CardTitle>
+          <CardDescription>Register as a learner</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {errors.general && (
+              <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">{errors.general}</div>
+            )}
+            <div className="space-y-2">
+              <Label>National ID</Label>
+              <Input placeholder="4–10 digit ID" value={form.nationalId} onChange={(e) => set("nationalId", e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" />
+              {errors.nationalId && <p className="text-destructive text-xs">{errors.nationalId}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>Email</Label>
+              <Input type="email" placeholder="you@example.com" value={form.email} onChange={(e) => set("email", e.target.value)} />
+              {errors.email && <p className="text-destructive text-xs">{errors.email}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>Organization</Label>
+              <Select value={form.organization} onValueChange={(v) => set("organization", v)}>
+                <SelectTrigger><SelectValue placeholder="Select organization" /></SelectTrigger>
+                <SelectContent>
+                  {organizations.map((org) => (
+                    <SelectItem key={org.id} value={org.name}>{org.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.organization && <p className="text-destructive text-xs">{errors.organization}</p>}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label>PIN</Label>
+                <div className="relative">
+                  <Input type={showPin ? "text" : "password"} placeholder="••••" value={form.pin} onChange={(e) => set("pin", e.target.value.replace(/\D/g, "").slice(0, 4))} maxLength={4} inputMode="numeric" />
+                  <button type="button" onClick={() => setShowPin(!showPin)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    {showPin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {errors.pin && <p className="text-destructive text-xs">{errors.pin}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label>Confirm PIN</Label>
+                <Input type={showPin ? "text" : "password"} placeholder="••••" value={form.confirmPin} onChange={(e) => set("confirmPin", e.target.value.replace(/\D/g, "").slice(0, 4))} maxLength={4} inputMode="numeric" />
+                {errors.confirmPin && <p className="text-destructive text-xs">{errors.confirmPin}</p>}
+              </div>
+            </div>
+            <Button type="submit" className="w-full">Create Account</Button>
+            <p className="text-center text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <Link to="/login" className="text-primary font-medium hover:underline">Sign In</Link>
+            </p>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default RegisterPage;
