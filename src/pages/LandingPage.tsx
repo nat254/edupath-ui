@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useSyncExternalStore } from "react";
 import { useNavigate } from "react-router-dom";
 import { courses } from "@/data/mockData";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,12 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, BookOpen, Users, Award, ArrowRight, Star, Quote } from "lucide-react";
-
-const testimonials = [
-  { name: "Dr. Amina Osei", role: "Senior Physician, KNH", rating: 5, text: "TrainHub transformed how our team stays up-to-date. The courses are practical and well-structured." },
-  { name: "James Mutua", role: "Nurse, Coast General", rating: 5, text: "I completed my certification in just two weeks. The quiz system really helped reinforce what I learned." },
-  { name: "Grace Wambui", role: "Lab Technician, Nairobi Hospital", rating: 4, text: "Easy to use, even on mobile. I love tracking my progress and picking up where I left off." },
-];
+import { testimonialStore } from "@/data/testimonialStore";
 
 const LandingPage = () => {
   const [search, setSearch] = useState("");

@@ -5,6 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, CheckCircle, Clock } from "lucide-react";
+import RatePlatform from "@/components/RatePlatform";
 
 const LearnerDashboard = () => {
   const navigate = useNavigate();
@@ -71,6 +72,11 @@ const LearnerDashboard = () => {
             </Card>
           );
         })}
+      </div>
+
+      {/* Rate the Platform */}
+      <div className="max-w-md">
+        <RatePlatform />
       </div>
     </div>
   );
