@@ -1,21 +1,35 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { courses } from "@/data/mockData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, BookOpen, Users, Award, ArrowRight } from "lucide-react";
+import { Search, BookOpen, Users, Award, ArrowRight, Star, Quote } from "lucide-react";
+
+const testimonials = [
+  { name: "Dr. Amina Osei", role: "Senior Physician, KNH", rating: 5, text: "TrainHub transformed how our team stays up-to-date. The courses are practical and well-structured." },
+  { name: "James Mutua", role: "Nurse, Coast General", rating: 5, text: "I completed my certification in just two weeks. The quiz system really helped reinforce what I learned." },
+  { name: "Grace Wambui", role: "Lab Technician, Nairobi Hospital", rating: 4, text: "Easy to use, even on mobile. I love tracking my progress and picking up where I left off." },
+];
 
 const LandingPage = () => {
   const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("All");
   const navigate = useNavigate();
 
-  const filtered = courses.filter(
-    (c) =>
+  const categories = useMemo(() => {
+    const cats = Array.from(new Set(courses.map((c) => c.category)));
+    return ["All", ...cats];
+  }, []);
+
+  const filtered = courses.filter((c) => {
+    const matchesSearch =
       c.title.toLowerCase().includes(search.toLowerCase()) ||
-      c.category.toLowerCase().includes(search.toLowerCase())
-  );
+      c.category.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory = activeCategory === "All" || c.category === activeCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -64,7 +78,7 @@ const LandingPage = () => {
 
       {/* Course Catalog */}
       <section className="max-w-6xl mx-auto px-4 pb-16">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="text-2xl font-bold text-foreground">Explore Courses</h2>
             <p className="text-sm text-muted-foreground">Click on a course to get started</p>
@@ -80,9 +94,24 @@ const LandingPage = () => {
           </div>
         </div>
 
+        {/* Category Filters */}
+        <div className="flex flex-wrap gap-2 mb-8">
+          {categories.map((cat) => (
+            <Button
+              key={cat}
+              variant={activeCategory === cat ? "default" : "outline"}
+              size="sm"
+              className="rounded-full text-xs"
+              onClick={() => setActiveCategory(cat)}
+            >
+              {cat}
+            </Button>
+          ))}
+        </div>
+
         {filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
-            <p className="text-lg">No courses found for "{search}"</p>
+            <p className="text-lg">No courses found</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -109,6 +138,38 @@ const LandingPage = () => {
             ))}
           </div>
         )}
+      </section>
+
+      {/* Testimonials */}
+      <section className="bg-muted/50 border-t border-border">
+        <div className="max-w-6xl mx-auto px-4 py-16">
+          <div className="text-center mb-10">
+            <h2 className="text-2xl font-bold text-foreground">What Our Learners Say</h2>
+            <p className="text-sm text-muted-foreground mt-1">Real feedback from healthcare professionals</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {testimonials.map((t) => (
+              <Card key={t.name} className="relative overflow-hidden">
+                <CardContent className="p-6 space-y-4">
+                  <Quote className="h-8 w-8 text-primary/20 absolute top-4 right-4" />
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={`h-4 w-4 ${i < t.rating ? "text-primary fill-primary" : "text-border"}`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed">"{t.text}"</p>
+                  <div className="pt-2 border-t border-border">
+                    <p className="text-sm font-semibold text-foreground">{t.name}</p>
+                    <p className="text-xs text-muted-foreground">{t.role}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* Footer */}
