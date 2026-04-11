@@ -12,6 +12,7 @@ import CourseListPage from "@/pages/CourseListPage";
 import CreateCoursePage from "@/pages/CreateCoursePage";
 import CoursePlayerPage from "@/pages/CoursePlayerPage";
 import LearnersPage from "@/pages/LearnersPage";
+import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
 import { ReactNode } from "react";
 
