@@ -45,7 +45,7 @@ const PinInput = ({ value, onChange, label = "Enter your 4 digit PIN", error, sh
     <div className="space-y-2">
       {label && <label className="text-sm font-medium leading-none">{label}</label>}
       <div className="flex items-center gap-3">
-        <div className="flex gap-3">
+        <div className="flex gap-12">
           {[0, 1, 2, 3].map((i) => (
             <input
               key={i}

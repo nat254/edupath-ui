@@ -24,12 +24,10 @@ export interface QuizQuestion {
 }
 
 export const categories = [
-  "Clinical Skills",
-  "Patient Safety",
-  "Infection Control",
-  "Leadership",
-  "Emergency Response",
-  "Mental Health",
+  "Biometrics",
+  "Lipa pole pole",
+  "Provider Portal",
+  "Assisted Registration",
 ];
 
 export const courses: Course[] = [

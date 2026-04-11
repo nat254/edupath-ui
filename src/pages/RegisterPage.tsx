@@ -60,7 +60,7 @@ const RegisterPage = () => {
             )}
             <div className="space-y-2">
               <Label>National ID</Label>
-              <Input placeholder="4–10 digit ID" value={form.nationalId} onChange={(e) => set("nationalId", e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" />
+              <Input placeholder="Enter a valid National ID" value={form.nationalId} onChange={(e) => set("nationalId", e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" />
               {errors.nationalId && <p className="text-destructive text-xs">{errors.nationalId}</p>}
             </div>
             <div className="space-y-2">
