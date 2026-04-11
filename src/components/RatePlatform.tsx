@@ -8,7 +8,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { testimonialStore } from "@/data/testimonialStore";
 import { toast } from "sonner";
 import { MessageSquareHeart } from "lucide-react";
-import { MessageSquareHeart } from "lucide-react";
 
 const RatePlatform = () => {
   const { user } = useAuth();
