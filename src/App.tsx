@@ -12,6 +12,7 @@ import CourseListPage from "@/pages/CourseListPage";
 import CreateCoursePage from "@/pages/CreateCoursePage";
 import CoursePlayerPage from "@/pages/CoursePlayerPage";
 import LearnersPage from "@/pages/LearnersPage";
+import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
 import { ReactNode } from "react";
 
@@ -38,7 +39,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
             <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
