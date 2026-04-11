@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import StarRating from "@/components/StarRating";
 import { useAuth } from "@/contexts/AuthContext";
 import { testimonialStore } from "@/data/testimonialStore";
@@ -10,11 +11,22 @@ import { MessageSquareHeart } from "lucide-react";
 
 const RatePlatform = () => {
   const { user } = useAuth();
+  const orgName = user?.organization?.split(" - ")[0] ?? "";
+  const [name, setName] = useState(user?.name ?? "");
+  const [role, setRole] = useState("");
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = () => {
+    if (!name.trim()) {
+      toast.error("Please enter your name");
+      return;
+    }
+    if (!role.trim()) {
+      toast.error("Please enter your role");
+      return;
+    }
     if (rating === 0) {
       toast.error("Please select a star rating");
       return;
@@ -24,8 +36,8 @@ const RatePlatform = () => {
       return;
     }
     testimonialStore.add({
-      name: user?.name ?? "Anonymous",
-      role: `Learner, ${user?.organization?.split(" - ")[0] ?? ""}`,
+      name: name.trim(),
+      role: `${role.trim()}, ${orgName}`,
       rating,
       text: comment.trim(),
     });
@@ -53,6 +65,17 @@ const RatePlatform = () => {
           <h3 className="font-semibold text-foreground">Rate TrainHub</h3>
         </div>
         <p className="text-sm text-muted-foreground">Share your experience to help other learners.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Your Name</label>
+            <Input placeholder="e.g. Jane Wanjiku" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-muted-foreground">Your Role</label>
+            <Input placeholder="e.g. Nurse" value={role} onChange={(e) => setRole(e.target.value)} />
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">Organization: <span className="font-medium text-foreground">{orgName}</span></p>
         <StarRating value={rating} onChange={setRating} />
         <Textarea
           placeholder="Tell us what you think..."
