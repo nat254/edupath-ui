@@ -10,11 +10,22 @@ import { MessageSquareHeart } from "lucide-react";
 
 const RatePlatform = () => {
   const { user } = useAuth();
+  const orgName = user?.organization?.split(" - ")[0] ?? "";
+  const [name, setName] = useState(user?.name ?? "");
+  const [role, setRole] = useState("");
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = () => {
+    if (!name.trim()) {
+      toast.error("Please enter your name");
+      return;
+    }
+    if (!role.trim()) {
+      toast.error("Please enter your role");
+      return;
+    }
     if (rating === 0) {
       toast.error("Please select a star rating");
       return;
@@ -24,8 +35,8 @@ const RatePlatform = () => {
       return;
     }
     testimonialStore.add({
-      name: user?.name ?? "Anonymous",
-      role: `Learner, ${user?.organization?.split(" - ")[0] ?? ""}`,
+      name: name.trim(),
+      role: `${role.trim()}, ${orgName}`,
       rating,
       text: comment.trim(),
     });
