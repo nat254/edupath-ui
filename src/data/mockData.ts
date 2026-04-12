@@ -13,6 +13,7 @@ export interface Course {
   objectives: string;
   duration: string;
   videoUrl: string;
+  pdfUrl?: string;
   quiz: QuizQuestion[];
 }
 

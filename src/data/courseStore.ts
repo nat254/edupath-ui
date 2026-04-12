@@ -1,4 +1,4 @@
-import { Course, QuizQuestion, courses as initialCourses } from "./mockData";
+import { Course, courses as initialCourses } from "./mockData";
 
 let courseList: Course[] = [...initialCourses];
 let listeners: (() => void)[] = [];
