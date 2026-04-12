@@ -115,8 +115,8 @@ export const notifications = [
 ];
 
 export const mockLearners = [
-  { id: "1", name: "Jane Wanjiku", nationalId: "1234567890", organization: "Kenyatta National Hospital", coursesCompleted: 3, coursesInProgress: 2 },
-  { id: "2", name: "Peter Omondi", nationalId: "0987654321", organization: "Moi Teaching & Referral Hospital", coursesCompleted: 1, coursesInProgress: 4 },
-  { id: "3", name: "Mary Achieng", nationalId: "1122334455", organization: "Nairobi Hospital", coursesCompleted: 5, coursesInProgress: 0 },
-  { id: "4", name: "John Kamau", nationalId: "5566778899", organization: "Aga Khan University Hospital", coursesCompleted: 2, coursesInProgress: 1 },
+  { id: "1", email: "janewanjiku@gmail.com", nationalId: "1234567890", organization: "Kenyatta National Hospital", coursesCompleted: 3, coursesInProgress: 2 },
+  { id: "2", email: "petemondi@gmail.com", nationalId: "0987654321", organization: "Moi Teaching & Referral Hospital", coursesCompleted: 1, coursesInProgress: 4 },
+  { id: "3", email: "maryachieng@gmail.com", nationalId: "1122334455", organization: "Nairobi Hospital", coursesCompleted: 5, coursesInProgress: 0 },
+  { id: "4", email: "johnkamau@gmail.com", nationalId: "5566778899", organization: "Aga Khan University Hospital", coursesCompleted: 2, coursesInProgress: 1 },
 ];
