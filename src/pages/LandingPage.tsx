@@ -93,7 +93,7 @@ const LandingPage = () => {
 
         {/* Category Filters */}
         <div className="flex flex-wrap gap-2 mb-8">
-          {categories.map((cat) => (
+          {allCategories.map((cat) => (
             <Button
               key={cat}
               variant={activeCategory === cat ? "default" : "outline"}
