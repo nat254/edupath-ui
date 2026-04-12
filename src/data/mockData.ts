@@ -14,6 +14,7 @@ export interface Course {
   duration: string;
   videoUrl: string;
   pdfUrl?: string;
+  coverImage?:string;
   quiz: QuizQuestion[];
 }
 
@@ -22,6 +23,8 @@ export interface QuizQuestion {
   question: string;
   options: string[];
   correctIndex: number;
+  correctIndexes?: number[];
+  isMultiple?: boolean;
 }
 
 export const categories = [
