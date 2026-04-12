@@ -1,5 +1,4 @@
 import { useSyncExternalStore } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { courseStore } from "@/data/courseStore";
 import { learnerStore } from "@/data/learnerStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, Users, TrendingUp, Award } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import AppLayout from "@/components/AppLayout";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const courses = useSyncExternalStore(courseStore.subscribe, courseStore.getAll);
+  const mockLearners = useSyncExternalStore(learnerStore.subscribe, learnerStore.getAll);
 
   const stats = [
     { label: "Total Courses", value: courses.length, icon: BookOpen, color: "bg-primary/10 text-primary" },

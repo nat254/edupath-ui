@@ -13,6 +13,7 @@ const LandingPage = () => {
   const [activeCategory, setActiveCategory] = useState("All");
   const navigate = useNavigate();
   const testimonials = useSyncExternalStore(testimonialStore.subscribe, testimonialStore.getAll);
+  const courses = useSyncExternalStore(courseStore.subscribe, courseStore.getAll);
 
   const categories = useMemo(() => {
     const cats = Array.from(new Set(courses.map((c) => c.category)));
