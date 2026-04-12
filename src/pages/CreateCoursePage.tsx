@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { categories } from "@/data/mockData";
 import { courseStore } from "@/data/courseStore";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Trash2, Plus, GripVertical } from "lucide-react";
+import { Trash2, Plus, GripVertical, Upload, FileVideo, FileText, X } from "lucide-react";
 
 interface QuizQuestionForm {
   question: string;
@@ -34,9 +34,14 @@ const CreateCoursePage = () => {
     category: existing?.category ?? "",
     objectives: existing?.objectives ?? "",
     duration: existing?.duration ?? "",
-    videoUrl: existing?.videoUrl ?? "",
-    pdfUrl: existing?.pdfUrl ?? "",
   });
+
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string>(existing?.videoUrl ?? "");
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfName, setPdfName] = useState<string>(existing?.pdfUrl ? "Existing PDF" : "");
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
   const [quiz, setQuiz] = useState<QuizQuestionForm[]>(
     existing?.quiz?.map((q) => ({ question: q.question, options: [...q.options], correctIndex: q.correctIndex })) ?? [emptyQuestion()]
@@ -50,7 +55,7 @@ const CreateCoursePage = () => {
     if (!form.category) e.category = "Required";
     if (!form.objectives.trim()) e.objectives = "Required";
     if (!form.duration.trim()) e.duration = "Required";
-    if (!form.videoUrl.trim()) e.videoUrl = "Video URL is required";
+    if (!videoFile && !videoPreview) e.video = "Video file is required";
 
     quiz.forEach((q, i) => {
       if (!q.question.trim()) e[`quiz_${i}_q`] = "Question is required";
@@ -94,17 +99,54 @@ const CreateCoursePage = () => {
     );
   };
 
+  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      toast.error("Please select a valid video file");
+      return;
+    }
+    setVideoFile(file);
+    setVideoPreview(URL.createObjectURL(file));
+  };
+
+  const handlePdfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      toast.error("Please select a valid PDF file");
+      return;
+    }
+    setPdfFile(file);
+    setPdfName(file.name);
+  };
+
+  const removeVideo = () => {
+    setVideoFile(null);
+    setVideoPreview("");
+    if (videoInputRef.current) videoInputRef.current.value = "";
+  };
+
+  const removePdf = () => {
+    setPdfFile(null);
+    setPdfName("");
+    if (pdfInputRef.current) pdfInputRef.current.value = "";
+  };
+
   const handleSubmit = (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
+
+    const videoUrl = videoFile ? URL.createObjectURL(videoFile) : videoPreview;
+    const pdfUrl = pdfFile ? URL.createObjectURL(pdfFile) : (existing?.pdfUrl ?? undefined);
 
     const courseData = {
       title: form.title.trim(),
       category: form.category,
       objectives: form.objectives.trim(),
       duration: form.duration.trim(),
-      videoUrl: form.videoUrl.trim(),
-      pdfUrl: form.pdfUrl.trim() || undefined,
+      videoUrl,
+      pdfUrl,
       quiz: quiz.map((q, i) => ({
         id: `q${i + 1}`,
         question: q.question.trim(),
@@ -168,14 +210,55 @@ const CreateCoursePage = () => {
                 <CardTitle className="text-base">Course Materials</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Video Upload */}
                 <div className="space-y-2">
-                  <Label>Video URL *</Label>
-                  <Input value={form.videoUrl} onChange={(e) => setForm((p) => ({ ...p, videoUrl: e.target.value }))} placeholder="https://example.com/video.mp4" />
-                  {errors.videoUrl && <p className="text-destructive text-xs">{errors.videoUrl}</p>}
+                  <Label>Video Content *</Label>
+                  <input type="file" accept="video/*" ref={videoInputRef} onChange={handleVideoChange} className="hidden" />
+                  {videoPreview ? (
+                    <div className="space-y-2">
+                      <div className="relative rounded-lg overflow-hidden border bg-muted">
+                        <video src={videoPreview} controls className="w-full max-h-48 object-contain" />
+                        <Button type="button" size="icon" variant="destructive" className="absolute top-2 right-2 h-7 w-7" onClick={removeVideo}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{videoFile?.name ?? "Existing video"}</p>
+                    </div>
+                  ) : (
+                    <div
+                      className="border-2 border-dashed rounded-lg p-8 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
+                      onClick={() => videoInputRef.current?.click()}
+                    >
+                      <FileVideo className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm font-medium text-foreground">Click to upload video</p>
+                      <p className="text-xs text-muted-foreground mt-1">MP4, WebM, or OGG</p>
+                    </div>
+                  )}
+                  {errors.video && <p className="text-destructive text-xs">{errors.video}</p>}
                 </div>
+
+                {/* PDF Upload */}
                 <div className="space-y-2">
-                  <Label>PDF Resource URL <span className="text-muted-foreground text-xs">(optional)</span></Label>
-                  <Input value={form.pdfUrl} onChange={(e) => setForm((p) => ({ ...p, pdfUrl: e.target.value }))} placeholder="https://example.com/resource.pdf" />
+                  <Label>PDF Resource <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                  <input type="file" accept=".pdf" ref={pdfInputRef} onChange={handlePdfChange} className="hidden" />
+                  {pdfName ? (
+                    <div className="flex items-center gap-3 border rounded-lg p-3 bg-muted/30">
+                      <FileText className="h-5 w-5 text-primary shrink-0" />
+                      <span className="text-sm truncate flex-1">{pdfName}</span>
+                      <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-destructive shrink-0" onClick={removePdf}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div
+                      className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:border-primary/50 hover:bg-muted/50 transition-colors"
+                      onClick={() => pdfInputRef.current?.click()}
+                    >
+                      <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm font-medium text-foreground">Click to upload PDF</p>
+                      <p className="text-xs text-muted-foreground mt-1">PDF files only</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
