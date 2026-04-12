@@ -1,6 +1,6 @@
 import { useState, useMemo, useSyncExternalStore } from "react";
 import { useNavigate } from "react-router-dom";
-import { courses } from "@/data/mockData";
+import { courseStore } from "@/data/courseStore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -13,11 +13,12 @@ const LandingPage = () => {
   const [activeCategory, setActiveCategory] = useState("All");
   const navigate = useNavigate();
   const testimonials = useSyncExternalStore(testimonialStore.subscribe, testimonialStore.getAll);
+  const courses = useSyncExternalStore(courseStore.subscribe, courseStore.getAll);
 
-  const categories = useMemo(() => {
-    const cats = Array.from(new Set(courses.map((c) => c.category)));
+  const allCategories = useMemo(() => {
+    const cats = Array.from(new Set(courses.map((c: { category: string }) => c.category)));
     return ["All", ...cats];
-  }, []);
+  }, [courses]);
 
   const filtered = courses.filter((c) => {
     const matchesSearch =
@@ -92,7 +93,7 @@ const LandingPage = () => {
 
         {/* Category Filters */}
         <div className="flex flex-wrap gap-2 mb-8">
-          {categories.map((cat) => (
+          {allCategories.map((cat) => (
             <Button
               key={cat}
               variant={activeCategory === cat ? "default" : "outline"}
