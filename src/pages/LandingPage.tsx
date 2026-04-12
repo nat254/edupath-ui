@@ -1,6 +1,6 @@
 import { useState, useMemo, useSyncExternalStore } from "react";
 import { useNavigate } from "react-router-dom";
-import { courses } from "@/data/mockData";
+import { courseStore } from "@/data/courseStore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";

@@ -1,5 +1,7 @@
+import { useSyncExternalStore } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { courses, mockLearners } from "@/data/mockData";
+import { courseStore } from "@/data/courseStore";
+import { learnerStore } from "@/data/learnerStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Users, TrendingUp, Award } from "lucide-react";
