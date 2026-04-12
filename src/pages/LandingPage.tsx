@@ -15,10 +15,10 @@ const LandingPage = () => {
   const testimonials = useSyncExternalStore(testimonialStore.subscribe, testimonialStore.getAll);
   const courses = useSyncExternalStore(courseStore.subscribe, courseStore.getAll);
 
-  const categories = useMemo(() => {
-    const cats = Array.from(new Set(courses.map((c) => c.category)));
+  const allCategories = useMemo(() => {
+    const cats = Array.from(new Set(courses.map((c: { category: string }) => c.category)));
     return ["All", ...cats];
-  }, []);
+  }, [courses]);
 
   const filtered = courses.filter((c) => {
     const matchesSearch =
