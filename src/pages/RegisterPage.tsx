@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { organizations } from "@/data/mockData";
+import { organizations, kenyanCounties } from "@/data/mockData";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import PinInput from "@/components/PinInput";
 import { GraduationCap } from "lucide-react";
 
 const RegisterPage = () => {
-  const [form, setForm] = useState({ nationalId: "", email: "", organization: "", pin: "", confirmPin: "" });
+  const [form, setForm] = useState({ nationalId: "", email: "", organization: "", county: "", pin: "", confirmPin: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -26,6 +26,7 @@ const RegisterPage = () => {
     if (!/^\d{4,10}$/.test(form.nationalId)) e.nationalId = "Must be 4–10 digits";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Enter a valid email";
     if (!form.organization) e.organization = "Select an organization";
+    if (!form.county) e.county = "Select a county";
     if (!/^\d{4}$/.test(form.pin)) e.pin = "PIN must be 4 digits";
     if (form.pin !== form.confirmPin) e.confirmPin = "PINs do not match";
     setErrors(e);
@@ -35,7 +36,7 @@ const RegisterPage = () => {
   const handleSubmit = (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
-    const result = register({ nationalId: form.nationalId, email: form.email, organization: form.organization, pin: form.pin });
+    const result = register({ nationalId: form.nationalId, email: form.email, organization: form.organization, county: form.county, pin: form.pin });
     if (!result.success) {
       setErrors({ general: result.error! });
     } else {
@@ -79,6 +80,18 @@ const RegisterPage = () => {
                 </SelectContent>
               </Select>
               {errors.organization && <p className="text-destructive text-xs">{errors.organization}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>County</Label>
+              <Select value={form.county} onValueChange={(v) => set("county", v)}>
+                <SelectTrigger><SelectValue placeholder="Select county" /></SelectTrigger>
+                <SelectContent>
+                  {kenyanCounties.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.county && <p className="text-destructive text-xs">{errors.county}</p>}
             </div>
             <PinInput
               value={form.pin}
