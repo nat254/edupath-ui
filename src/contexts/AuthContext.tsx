@@ -14,7 +14,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   login: (nationalId: string, pin: string) => { success: boolean; error?: string };
-  register: (data: { nationalId: string; email: string; organization: string; pin: string }) => { success: boolean; error?: string };
+  register: (data: { nationalId: string; email: string; organization: string; county: string; pin: string }) => { success: boolean; error?: string };
   logout: () => void;
 }
 
