@@ -2,9 +2,11 @@ import { mockLearners } from "./mockData";
 
 export interface Learner {
   id: string;
+  name: string;
   email: string;
   nationalId: string;
   organization: string;
+  county: string;
   coursesCompleted: number;
   coursesInProgress: number;
 }

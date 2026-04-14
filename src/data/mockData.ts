@@ -117,9 +117,19 @@ export const notifications = [
   { id: "3", message: "Course 'Emergency Response' deadline is approaching.", time: "3 days ago", read: true },
 ];
 
+export const kenyanCounties = [
+  "Baringo", "Bomet", "Bungoma", "Busia", "Elgeyo-Marakwet", "Embu", "Garissa",
+  "Homa Bay", "Isiolo", "Kajiado", "Kakamega", "Kericho", "Kiambu", "Kilifi",
+  "Kirinyaga", "Kisii", "Kisumu", "Kitui", "Kwale", "Laikipia", "Lamu", "Machakos",
+  "Makueni", "Mandera", "Marsabit", "Meru", "Migori", "Mombasa", "Murang'a",
+  "Nairobi", "Nakuru", "Nandi", "Narok", "Nyamira", "Nyandarua", "Nyeri",
+  "Samburu", "Siaya", "Taita-Taveta", "Tana River", "Tharaka-Nithi", "Trans-Nzoia",
+  "Turkana", "Uasin Gishu", "Vihiga", "Wajir", "West Pokot",
+];
+
 export const mockLearners = [
-  { id: "1", email: "janewanjiku@gmail.com", nationalId: "1234567890", organization: "Kenyatta National Hospital", coursesCompleted: 3, coursesInProgress: 2 },
-  { id: "2", email: "petemondi@gmail.com", nationalId: "0987654321", organization: "Moi Teaching & Referral Hospital", coursesCompleted: 1, coursesInProgress: 4 },
-  { id: "3", email: "maryachieng@gmail.com", nationalId: "1122334455", organization: "Nairobi Hospital", coursesCompleted: 5, coursesInProgress: 0 },
-  { id: "4", email: "johnkamau@gmail.com", nationalId: "5566778899", organization: "Aga Khan University Hospital", coursesCompleted: 2, coursesInProgress: 1 },
+  { id: "1", name: "Jane Wanjiku", email: "janewanjiku@gmail.com", nationalId: "1234567890", organization: "Kenyatta National Hospital", county: "Nairobi", coursesCompleted: 3, coursesInProgress: 2 },
+  { id: "2", name: "Pete Mondi", email: "petemondi@gmail.com", nationalId: "0987654321", organization: "Moi Teaching & Referral Hospital", county: "Uasin Gishu", coursesCompleted: 1, coursesInProgress: 4 },
+  { id: "3", name: "Mary Achieng", email: "maryachieng@gmail.com", nationalId: "1122334455", organization: "Nairobi Hospital", county: "Nairobi", coursesCompleted: 5, coursesInProgress: 0 },
+  { id: "4", name: "John Kamau", email: "johnkamau@gmail.com", nationalId: "5566778899", organization: "Aga Khan University Hospital", county: "Nairobi", coursesCompleted: 2, coursesInProgress: 1 },
 ];

@@ -6,6 +6,7 @@ export interface User {
   nationalId: string;
   email: string;
   organization: string;
+  county: string;
   role: UserRole;
   name: string;
 }
@@ -13,7 +14,7 @@ export interface User {
 interface AuthContextType {
   user: User | null;
   login: (nationalId: string, pin: string) => { success: boolean; error?: string };
-  register: (data: { nationalId: string; email: string; organization: string; pin: string }) => { success: boolean; error?: string };
+  register: (data: { nationalId: string; email: string; organization: string; county: string; pin: string }) => { success: boolean; error?: string };
   logout: () => void;
 }
 
@@ -26,8 +27,8 @@ export const useAuth = () => {
 };
 
 const mockUsers: User[] = [
-  { nationalId: "1234", email: "admin@tms.co.ke", organization: "Kenyatta National Hospital - FID-12-324627", role: "admin", name: "Admin User" },
-  { nationalId: "5678", email: "learner@tms.co.ke", organization: "Kenyatta National Hospital - FID-12-324627", role: "learner", name: "Jane Wanjiku" },
+  { nationalId: "1234", email: "admin@tms.co.ke", organization: "Kenyatta National Hospital - FID-12-324627", county: "Nairobi", role: "admin", name: "Admin User" },
+  { nationalId: "5678", email: "learner@tms.co.ke", organization: "Kenyatta National Hospital - FID-12-324627", county: "Nairobi", role: "learner", name: "Jane Wanjiku" },
 ];
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -41,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { success: true };
   };
 
-  const register = (data: { nationalId: string; email: string; organization: string; pin: string }): { success: boolean; error?: string } => {
+  const register = (data: { nationalId: string; email: string; organization: string; county: string; pin: string }): { success: boolean; error?: string } => {
     if (mockUsers.find((u) => u.nationalId === data.nationalId)) {
       return { success: false, error: "National ID already registered" };
     }
@@ -49,6 +50,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       nationalId: data.nationalId,
       email: data.email,
       organization: data.organization,
+      county: data.county,
       role: "learner",
       name: "New Learner",
     };

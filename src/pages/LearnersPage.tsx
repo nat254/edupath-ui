@@ -1,6 +1,6 @@
 import { useState, useSyncExternalStore } from "react";
 import { learnerStore, Learner } from "@/data/learnerStore";
-import { organizations } from "@/data/mockData";
+import { organizations, kenyanCounties } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -43,9 +43,11 @@ import { Pencil, Trash2, Plus, Download } from "lucide-react";
 import { toast } from "sonner";
 
 const emptyForm = {
+  name: "",
   email: "",
   nationalId: "",
   organization: "",
+  county: "",
   coursesCompleted: 0,
   coursesInProgress: 0,
 };
@@ -71,9 +73,11 @@ const LearnersPage = () => {
   const openEdit = (l: Learner) => {
     setEditId(l.id);
     setForm({
+      name: l.name,
       email: l.email,
       nationalId: l.nationalId,
       organization: l.organization,
+      county: l.county,
       coursesCompleted: l.coursesCompleted,
       coursesInProgress: l.coursesInProgress,
     });
@@ -83,6 +87,7 @@ const LearnersPage = () => {
 
   const validate = () => {
     const e: Record<string, string> = {};
+    if (!form.name.trim()) e.name = "Required";
     if (!form.email.trim()) {
       e.email = "Required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
@@ -90,6 +95,7 @@ const LearnersPage = () => {
     }
     if (!form.nationalId.trim()) e.nationalId = "Required";
     if (!form.organization) e.organization = "Required";
+    if (!form.county) e.county = "Required";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -331,55 +337,39 @@ const LearnersPage = () => {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
+              <Label>Name *</Label>
+              <Input value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Full name" />
+              {errors.name && <p className="text-destructive text-xs">{errors.name}</p>}
+            </div>
+            <div className="space-y-2">
               <Label>Email *</Label>
-              <Input
-                value={form.email}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, email: e.target.value }))
-                }
-                placeholder="Email"
-              />
-              {errors.name && (
-                <p className="text-destructive text-xs">{errors.email}</p>
-              )}
+              <Input value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} placeholder="Email" />
+              {errors.email && <p className="text-destructive text-xs">{errors.email}</p>}
             </div>
             <div className="space-y-2">
               <Label>National ID *</Label>
-              <Input
-                value={form.nationalId}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, nationalId: e.target.value }))
-                }
-                placeholder="National ID"
-              />
-              {errors.nationalId && (
-                <p className="text-destructive text-xs">{errors.nationalId}</p>
-              )}
+              <Input value={form.nationalId} onChange={(e) => setForm((p) => ({ ...p, nationalId: e.target.value }))} placeholder="National ID" />
+              {errors.nationalId && <p className="text-destructive text-xs">{errors.nationalId}</p>}
             </div>
             <div className="space-y-2">
               <Label>Organization *</Label>
-              <Select
-                value={form.organization}
-                onValueChange={(v) =>
-                  setForm((p) => ({ ...p, organization: v }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select organization" />
-                </SelectTrigger>
+              <Select value={form.organization} onValueChange={(v) => setForm((p) => ({ ...p, organization: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select organization" /></SelectTrigger>
                 <SelectContent>
-                  {organizations.map((o) => (
-                    <SelectItem key={o.id} value={o.name}>
-                      {o.name}
-                    </SelectItem>
-                  ))}
+                  {organizations.map((o) => (<SelectItem key={o.id} value={o.name}>{o.name}</SelectItem>))}
                 </SelectContent>
               </Select>
-              {errors.organization && (
-                <p className="text-destructive text-xs">
-                  {errors.organization}
-                </p>
-              )}
+              {errors.organization && <p className="text-destructive text-xs">{errors.organization}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>County *</Label>
+              <Select value={form.county} onValueChange={(v) => setForm((p) => ({ ...p, county: v }))}>
+                <SelectTrigger><SelectValue placeholder="Select county" /></SelectTrigger>
+                <SelectContent>
+                  {kenyanCounties.map((c) => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
+                </SelectContent>
+              </Select>
+              {errors.county && <p className="text-destructive text-xs">{errors.county}</p>}
             </div>
           </div>
           <DialogFooter>
