@@ -456,7 +456,7 @@ const AdminDashboard = () => {
                   <SelectItem value="year">Yearly</SelectItem>
                 </SelectContent>
               </Select>
-              <ExportButtons data={enrollmentByPeriod.map(d => ({ Period: ("month" in d ? d.month : d.day), Enrollments: d.enrollments }))} filename="enrollment-trends" />
+              <ExportButtons data={enrollmentByPeriod.map(d => ({ Period: d.day, Enrollments: d.enrollments }))} filename="enrollment-trends" />
             </div>
           </div>
         </CardHeader>
@@ -464,12 +464,12 @@ const AdminDashboard = () => {
           <ResponsiveContainer width="100%" height={320}>
             <LineChart data={enrollmentByPeriod}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey={trendPeriod === "year" ? "month" : "day"} stroke="hsl(var(--muted-foreground))" fontSize={10} angle={-35} textAnchor="end" height={50} interval="preserveStartEnd" />
+              <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" fontSize={10} angle={-35} textAnchor="end" height={50} interval="preserveStartEnd" />
               <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
               <Tooltip contentStyle={tooltipStyle} />
               <Line type="monotone" dataKey="enrollments" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 6 }} name="Enrollments" animationDuration={600} />
               {enrollmentByPeriod.length > 15 && (
-                <Brush dataKey={trendPeriod === "year" ? "month" : "day"} height={25} stroke="hsl(var(--primary))" fill="hsl(var(--muted))" />
+                <Brush dataKey="day" height={25} stroke="hsl(var(--primary))" fill="hsl(var(--muted))" />
               )}
             </LineChart>
           </ResponsiveContainer>
