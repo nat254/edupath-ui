@@ -296,19 +296,21 @@ const AdminDashboard = () => {
     }).sort((a, b) => b.score - a.score).slice(0, 10);
   }, [filteredCourses, filteredLearners.length, learners.length]);
 
-  // Enrollment trend by period
+  // Enrollment trend by period — reactive to filters
+  const filterRatio = filteredLearners.length / (learners.length || 1);
   const enrollmentByPeriod = useMemo((): { day: string; enrollments: number }[] => {
-    if (trendPeriod === "week") return dailyTrend.slice(-7).map(d => ({ day: d.day, enrollments: d.enrollments }));
+    const scale = (v: number) => Math.max(1, Math.round(v * filterRatio));
+    if (trendPeriod === "week") return dailyTrend.slice(-7).map(d => ({ day: d.day, enrollments: scale(d.enrollments) }));
     if (trendPeriod === "year") {
       const map: Record<string, number> = {};
       monthlyTrend.forEach(d => {
         const yr = d.month.split(" ")[1];
         map[yr] = (map[yr] || 0) + d.enrollments;
       });
-      return Object.entries(map).map(([day, enrollments]) => ({ day, enrollments }));
+      return Object.entries(map).map(([day, enrollments]) => ({ day, enrollments: scale(enrollments) }));
     }
-    return dailyTrend.slice(-30).map(d => ({ day: d.day, enrollments: d.enrollments }));
-  }, [trendPeriod, dailyTrend, monthlyTrend]);
+    return dailyTrend.slice(-30).map(d => ({ day: d.day, enrollments: scale(d.enrollments) }));
+  }, [trendPeriod, dailyTrend, monthlyTrend, filterRatio]);
 
   // Paginated tables
   const paginatedCourses = filteredCourses.slice((coursePage - 1) * TABLE_PAGE_SIZE, coursePage * TABLE_PAGE_SIZE);
