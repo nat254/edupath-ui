@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useSyncExternalStore } from "react";
 import { courseStore } from "@/data/courseStore";
-import { learnerStore, Learner } from "@/data/learnerStore";
+import { learnerStore } from "@/data/learnerStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format, subDays, isWithinInterval, startOfDay, endOfDay } from "date-fns";
+import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import {
   BookOpen, Users, TrendingUp, TrendingDown, Award, BarChart3, Filter, RotateCcw,
   ChevronDown, ChevronUp, Download, CalendarIcon, Activity, Clock, UserCheck, FileSpreadsheet,
@@ -183,7 +183,6 @@ const AdminDashboard = () => {
   const prevEnrollments7 = dailyTrend.slice(-14, -7).reduce((s, d) => s + d.enrollments, 0);
 
   // Sparkline data for KPIs
-  const enrollSparkline = dailyTrend.slice(-14).map(d => d.enrollments);
   const completionSparkline = monthlyTrend.slice(-8).map(d => d.completions);
   const learnerSparkline = monthlyTrend.slice(-8).map(d => d.enrollments);
 
