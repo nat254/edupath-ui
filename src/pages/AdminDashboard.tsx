@@ -157,7 +157,10 @@ const AdminDashboard = () => {
   const monthlyTrend = useMemo(() => generateMonthlyTrend(), []);
   const dailyTrend = useMemo(() => generateDailyTrend(), []);
 
-  // Date filtered trend
+  // Learner filter ratio for scaling trend data reactively
+  const learnerRatio = useMemo(() => filteredLearners.length / (learners.length || 1), [filteredLearners.length, learners.length]);
+
+  // Date filtered trend — also scales by filter ratio
   const filteredTrend = useMemo(() => {
     let data = monthlyTrend;
     if (dateFrom || dateTo) {
@@ -167,8 +170,12 @@ const AdminDashboard = () => {
         return true;
       });
     }
-    return data;
-  }, [monthlyTrend, dateFrom, dateTo]);
+    return data.map(d => ({
+      ...d,
+      enrollments: Math.max(1, Math.round(d.enrollments * learnerRatio)),
+      completions: Math.max(1, Math.round(d.completions * learnerRatio)),
+    }));
+  }, [monthlyTrend, dateFrom, dateTo, learnerRatio]);
 
   // Stats
   const totalCompleted = filteredLearners.reduce((s, l) => s + l.coursesCompleted, 0);
@@ -177,14 +184,19 @@ const AdminDashboard = () => {
     ? Math.round((totalCompleted / (totalCompleted + totalInProgress || 1)) * 100) : 0;
   const activeLearners = filteredLearners.filter(l => l.coursesInProgress > 0).length;
 
-  // Recent enrollments (last 7 and 30 days from daily trend)
-  const recentEnrollments7 = dailyTrend.slice(-7).reduce((s, d) => s + d.enrollments, 0);
-  const recentEnrollments30 = dailyTrend.slice(-30).reduce((s, d) => s + d.enrollments, 0);
-  const prevEnrollments7 = dailyTrend.slice(-14, -7).reduce((s, d) => s + d.enrollments, 0);
+  // Recent enrollments — reactive to filters
+  const scaledDaily = useMemo(() => dailyTrend.map(d => ({
+    ...d,
+    enrollments: Math.max(1, Math.round(d.enrollments * learnerRatio)),
+  })), [dailyTrend, learnerRatio]);
 
-  // Sparkline data for KPIs
-  const completionSparkline = monthlyTrend.slice(-8).map(d => d.completions);
-  const learnerSparkline = monthlyTrend.slice(-8).map(d => d.enrollments);
+  const recentEnrollments7 = scaledDaily.slice(-7).reduce((s, d) => s + d.enrollments, 0);
+  const recentEnrollments30 = scaledDaily.slice(-30).reduce((s, d) => s + d.enrollments, 0);
+  const prevEnrollments7 = scaledDaily.slice(-14, -7).reduce((s, d) => s + d.enrollments, 0);
+
+  // Sparkline data for KPIs — reactive
+  const completionSparkline = filteredTrend.slice(-8).map(d => d.completions);
+  const learnerSparkline = filteredTrend.slice(-8).map(d => d.enrollments);
 
   // KPI cards config
   const kpis = [
