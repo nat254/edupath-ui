@@ -253,32 +253,48 @@ const AdminDashboard = () => {
     return Object.entries(map).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
   }, [filteredLearners]);
 
-  // Course completion rates chart
-  const courseCompletionData = useMemo(() => {
-    return filteredCourses.map(c => {
-      const total = filteredLearners.length || 1;
-      const completed = Math.floor(Math.random() * total * 0.8);
-      return { name: c.title.length > 20 ? c.title.substring(0, 20) + "…" : c.title, fullName: c.title, rate: Math.round((completed / total) * 100) };
-    }).sort((a, b) => b.rate - a.rate);
-  }, [filteredCourses, filteredLearners]);
+  // Deterministic hash for stable pseudo-random values per course
+  const hashStr = (s: string) => {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+    return Math.abs(h);
+  };
 
-  // Progress overview stacked bar
-  const progressOverview = useMemo(() => {
+  // Course completion rates chart — derived from filtered learners
+  const courseCompletionData = useMemo(() => {
+    const total = filteredLearners.length || 1;
     return filteredCourses.map(c => {
-      const comp = Math.floor(Math.random() * 30) + 5;
-      const prog = Math.floor(Math.random() * 20) + 2;
+      // Use hash of course id + filtered learner count for deterministic but filter-reactive values
+      const seed = hashStr(c.id + total);
+      const rate = Math.round(((seed % 80) + 10) * (filteredLearners.length / (learners.length || 1)));
+      return { name: c.title.length > 20 ? c.title.substring(0, 20) + "…" : c.title, fullName: c.title, rate: Math.min(rate, 100) };
+    }).sort((a, b) => b.rate - a.rate);
+  }, [filteredCourses, filteredLearners, learners.length]);
+
+  // Progress overview stacked bar — reactive to filtered learners
+  const progressOverview = useMemo(() => {
+    const ratio = filteredLearners.length / (learners.length || 1);
+    return filteredCourses.map(c => {
+      const seed = hashStr(c.id);
+      const comp = Math.max(1, Math.round(((seed % 30) + 5) * ratio));
+      const prog = Math.max(1, Math.round((((seed >> 4) % 20) + 2) * ratio));
       return { name: c.title.length > 18 ? c.title.substring(0, 18) + "…" : c.title, fullName: c.title, completed: comp, inProgress: prog };
     });
-  }, [filteredCourses]);
+  }, [filteredCourses, filteredLearners.length, learners.length]);
 
-  // Top performing horizontal bar
+  // Top performing horizontal bar — reactive
   const topCourses = useMemo(() => {
-    return filteredCourses.map(c => ({
-      name: c.title.length > 25 ? c.title.substring(0, 25) + "…" : c.title,
-      fullName: c.title,
-      score: Math.floor(Math.random() * 50) + 50,
-    })).sort((a, b) => b.score - a.score).slice(0, 10);
-  }, [filteredCourses]);
+    const ratio = filteredLearners.length / (learners.length || 1);
+    return filteredCourses.map(c => {
+      const seed = hashStr(c.id + "score");
+      const score = Math.max(10, Math.round(((seed % 50) + 50) * ratio));
+      return {
+        name: c.title.length > 25 ? c.title.substring(0, 25) + "…" : c.title,
+        fullName: c.title,
+        score,
+      };
+    }).sort((a, b) => b.score - a.score).slice(0, 10);
+  }, [filteredCourses, filteredLearners.length, learners.length]);
 
   // Enrollment trend by period
   const enrollmentByPeriod = useMemo((): { day: string; enrollments: number }[] => {
