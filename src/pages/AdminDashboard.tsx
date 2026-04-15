@@ -281,17 +281,17 @@ const AdminDashboard = () => {
   }, [filteredCourses]);
 
   // Enrollment trend by period
-  const enrollmentByPeriod = useMemo(() => {
-    if (trendPeriod === "week") return dailyTrend.slice(-7);
+  const enrollmentByPeriod = useMemo((): { day: string; enrollments: number }[] => {
+    if (trendPeriod === "week") return dailyTrend.slice(-7).map(d => ({ day: d.day, enrollments: d.enrollments }));
     if (trendPeriod === "year") {
       const map: Record<string, number> = {};
       monthlyTrend.forEach(d => {
         const yr = d.month.split(" ")[1];
         map[yr] = (map[yr] || 0) + d.enrollments;
       });
-      return Object.entries(map).map(([month, enrollments]) => ({ month, enrollments, day: month }));
+      return Object.entries(map).map(([day, enrollments]) => ({ day, enrollments }));
     }
-    return dailyTrend.slice(-30);
+    return dailyTrend.slice(-30).map(d => ({ day: d.day, enrollments: d.enrollments }));
   }, [trendPeriod, dailyTrend, monthlyTrend]);
 
   // Paginated tables
