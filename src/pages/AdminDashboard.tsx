@@ -157,7 +157,10 @@ const AdminDashboard = () => {
   const monthlyTrend = useMemo(() => generateMonthlyTrend(), []);
   const dailyTrend = useMemo(() => generateDailyTrend(), []);
 
-  // Date filtered trend
+  // Learner filter ratio for scaling trend data reactively
+  const learnerRatio = useMemo(() => filteredLearners.length / (learners.length || 1), [filteredLearners.length, learners.length]);
+
+  // Date filtered trend — also scales by filter ratio
   const filteredTrend = useMemo(() => {
     let data = monthlyTrend;
     if (dateFrom || dateTo) {
@@ -167,8 +170,12 @@ const AdminDashboard = () => {
         return true;
       });
     }
-    return data;
-  }, [monthlyTrend, dateFrom, dateTo]);
+    return data.map(d => ({
+      ...d,
+      enrollments: Math.max(1, Math.round(d.enrollments * learnerRatio)),
+      completions: Math.max(1, Math.round(d.completions * learnerRatio)),
+    }));
+  }, [monthlyTrend, dateFrom, dateTo, learnerRatio]);
 
   // Stats
   const totalCompleted = filteredLearners.reduce((s, l) => s + l.coursesCompleted, 0);
@@ -177,14 +184,19 @@ const AdminDashboard = () => {
     ? Math.round((totalCompleted / (totalCompleted + totalInProgress || 1)) * 100) : 0;
   const activeLearners = filteredLearners.filter(l => l.coursesInProgress > 0).length;
 
-  // Recent enrollments (last 7 and 30 days from daily trend)
-  const recentEnrollments7 = dailyTrend.slice(-7).reduce((s, d) => s + d.enrollments, 0);
-  const recentEnrollments30 = dailyTrend.slice(-30).reduce((s, d) => s + d.enrollments, 0);
-  const prevEnrollments7 = dailyTrend.slice(-14, -7).reduce((s, d) => s + d.enrollments, 0);
+  // Recent enrollments — reactive to filters
+  const scaledDaily = useMemo(() => dailyTrend.map(d => ({
+    ...d,
+    enrollments: Math.max(1, Math.round(d.enrollments * learnerRatio)),
+  })), [dailyTrend, learnerRatio]);
 
-  // Sparkline data for KPIs
-  const completionSparkline = monthlyTrend.slice(-8).map(d => d.completions);
-  const learnerSparkline = monthlyTrend.slice(-8).map(d => d.enrollments);
+  const recentEnrollments7 = scaledDaily.slice(-7).reduce((s, d) => s + d.enrollments, 0);
+  const recentEnrollments30 = scaledDaily.slice(-30).reduce((s, d) => s + d.enrollments, 0);
+  const prevEnrollments7 = scaledDaily.slice(-14, -7).reduce((s, d) => s + d.enrollments, 0);
+
+  // Sparkline data for KPIs — reactive
+  const completionSparkline = filteredTrend.slice(-8).map(d => d.completions);
+  const learnerSparkline = filteredTrend.slice(-8).map(d => d.enrollments);
 
   // KPI cards config
   const kpis = [
@@ -253,46 +265,64 @@ const AdminDashboard = () => {
     return Object.entries(map).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
   }, [filteredLearners]);
 
-  // Course completion rates chart
-  const courseCompletionData = useMemo(() => {
-    return filteredCourses.map(c => {
-      const total = filteredLearners.length || 1;
-      const completed = Math.floor(Math.random() * total * 0.8);
-      return { name: c.title.length > 20 ? c.title.substring(0, 20) + "…" : c.title, fullName: c.title, rate: Math.round((completed / total) * 100) };
-    }).sort((a, b) => b.rate - a.rate);
-  }, [filteredCourses, filteredLearners]);
+  // Deterministic hash for stable pseudo-random values per course
+  const hashStr = (s: string) => {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+    return Math.abs(h);
+  };
 
-  // Progress overview stacked bar
-  const progressOverview = useMemo(() => {
+  // Course completion rates chart — derived from filtered learners
+  const courseCompletionData = useMemo(() => {
+    const total = filteredLearners.length || 1;
     return filteredCourses.map(c => {
-      const comp = Math.floor(Math.random() * 30) + 5;
-      const prog = Math.floor(Math.random() * 20) + 2;
+      // Use hash of course id + filtered learner count for deterministic but filter-reactive values
+      const seed = hashStr(c.id + total);
+      const rate = Math.round(((seed % 80) + 10) * (filteredLearners.length / (learners.length || 1)));
+      return { name: c.title.length > 20 ? c.title.substring(0, 20) + "…" : c.title, fullName: c.title, rate: Math.min(rate, 100) };
+    }).sort((a, b) => b.rate - a.rate);
+  }, [filteredCourses, filteredLearners, learners.length]);
+
+  // Progress overview stacked bar — reactive to filtered learners
+  const progressOverview = useMemo(() => {
+    const ratio = filteredLearners.length / (learners.length || 1);
+    return filteredCourses.map(c => {
+      const seed = hashStr(c.id);
+      const comp = Math.max(1, Math.round(((seed % 30) + 5) * ratio));
+      const prog = Math.max(1, Math.round((((seed >> 4) % 20) + 2) * ratio));
       return { name: c.title.length > 18 ? c.title.substring(0, 18) + "…" : c.title, fullName: c.title, completed: comp, inProgress: prog };
     });
-  }, [filteredCourses]);
+  }, [filteredCourses, filteredLearners.length, learners.length]);
 
-  // Top performing horizontal bar
+  // Top performing horizontal bar — reactive
   const topCourses = useMemo(() => {
-    return filteredCourses.map(c => ({
-      name: c.title.length > 25 ? c.title.substring(0, 25) + "…" : c.title,
-      fullName: c.title,
-      score: Math.floor(Math.random() * 50) + 50,
-    })).sort((a, b) => b.score - a.score).slice(0, 10);
-  }, [filteredCourses]);
+    const ratio = filteredLearners.length / (learners.length || 1);
+    return filteredCourses.map(c => {
+      const seed = hashStr(c.id + "score");
+      const score = Math.max(10, Math.round(((seed % 50) + 50) * ratio));
+      return {
+        name: c.title.length > 25 ? c.title.substring(0, 25) + "…" : c.title,
+        fullName: c.title,
+        score,
+      };
+    }).sort((a, b) => b.score - a.score).slice(0, 10);
+  }, [filteredCourses, filteredLearners.length, learners.length]);
 
-  // Enrollment trend by period
+  // Enrollment trend by period — reactive to filters
+  const filterRatio = filteredLearners.length / (learners.length || 1);
   const enrollmentByPeriod = useMemo((): { day: string; enrollments: number }[] => {
-    if (trendPeriod === "week") return dailyTrend.slice(-7).map(d => ({ day: d.day, enrollments: d.enrollments }));
+    const scale = (v: number) => Math.max(1, Math.round(v * filterRatio));
+    if (trendPeriod === "week") return dailyTrend.slice(-7).map(d => ({ day: d.day, enrollments: scale(d.enrollments) }));
     if (trendPeriod === "year") {
       const map: Record<string, number> = {};
       monthlyTrend.forEach(d => {
         const yr = d.month.split(" ")[1];
         map[yr] = (map[yr] || 0) + d.enrollments;
       });
-      return Object.entries(map).map(([day, enrollments]) => ({ day, enrollments }));
+      return Object.entries(map).map(([day, enrollments]) => ({ day, enrollments: scale(enrollments) }));
     }
-    return dailyTrend.slice(-30).map(d => ({ day: d.day, enrollments: d.enrollments }));
-  }, [trendPeriod, dailyTrend, monthlyTrend]);
+    return dailyTrend.slice(-30).map(d => ({ day: d.day, enrollments: scale(d.enrollments) }));
+  }, [trendPeriod, dailyTrend, monthlyTrend, filterRatio]);
 
   // Paginated tables
   const paginatedCourses = filteredCourses.slice((coursePage - 1) * TABLE_PAGE_SIZE, coursePage * TABLE_PAGE_SIZE);
