@@ -127,12 +127,10 @@ const LoginPage = () => {
               </Link>
             </p>
             <div className="mt-4 p-3 rounded-md bg-muted text-xs text-muted-foreground">
-              <p className="font-medium mb-1">Demo Credentials:</p>
+              <p className="font-medium mb-1">First time?</p>
               <p>
-                Admin: ID <strong>1234</strong>, PIN <strong>1234</strong>
-              </p>
-              <p>
-                Learner: ID <strong>5678</strong>, PIN <strong>1234</strong>
+                Register with ID <strong>1234</strong> to create the demo admin account.
+                Any other ID registers as a learner.
               </p>
             </div>
           </form>
