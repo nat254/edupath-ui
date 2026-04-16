@@ -43,10 +43,10 @@ const LoginPage = () => {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (ev: React.FormEvent) => {
+  const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
-    const result = login(nationalId, pin);
+    const result = await login(nationalId, pin);
     if (!result.success) {
       setErrors({ general: result.error });
     } else {
