@@ -43,10 +43,10 @@ const LoginPage = () => {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (ev: React.FormEvent) => {
+  const handleSubmit = (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
-    const result = await login(nationalId, pin);
+    const result = login(nationalId, pin);
     if (!result.success) {
       setErrors({ general: result.error });
     } else {
@@ -127,10 +127,12 @@ const LoginPage = () => {
               </Link>
             </p>
             <div className="mt-4 p-3 rounded-md bg-muted text-xs text-muted-foreground">
-              <p className="font-medium mb-1">First time?</p>
+              <p className="font-medium mb-1">Demo Credentials:</p>
               <p>
-                Register with ID <strong>1234</strong> to create the demo admin account.
-                Any other ID registers as a learner.
+                Admin: ID <strong>1234</strong>, PIN <strong>1234</strong>
+              </p>
+              <p>
+                Learner: ID <strong>5678</strong>, PIN <strong>1234</strong>
               </p>
             </div>
           </form>
