@@ -39,6 +39,7 @@ const LoginPage = () => {
   };
 
   const handleSubmit = (ev: React.FormEvent) => {
+  const handleSubmit = (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
     const result = login(nationalId, pin);
