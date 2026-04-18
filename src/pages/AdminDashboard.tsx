@@ -265,6 +265,30 @@ const AdminDashboard = () => {
     return Object.entries(map).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
   }, [filteredLearners]);
 
+  // Detailed county analytics — learners, completed, in-progress, completion rate per county
+  const countyAnalytics = useMemo(() => {
+    const map: Record<string, { learners: number; completed: number; inProgress: number }> = {};
+    filteredLearners.forEach((l) => {
+      if (!l.county) return;
+      if (!map[l.county]) map[l.county] = { learners: 0, completed: 0, inProgress: 0 };
+      map[l.county].learners += 1;
+      map[l.county].completed += l.coursesCompleted;
+      map[l.county].inProgress += l.coursesInProgress;
+    });
+    return Object.entries(map)
+      .map(([name, v]) => {
+        const total = v.completed + v.inProgress;
+        return {
+          name,
+          learners: v.learners,
+          completed: v.completed,
+          inProgress: v.inProgress,
+          completionRate: total ? Math.round((v.completed / total) * 100) : 0,
+        };
+      })
+      .sort((a, b) => b.learners - a.learners);
+  }, [filteredLearners]);
+
   // Deterministic hash for stable pseudo-random values per course
   const hashStr = (s: string) => {
     let h = 0;
