@@ -33,10 +33,10 @@ const RegisterPage = () => {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (ev: React.FormEvent) => {
+  const handleSubmit = (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
-    const result = await register({ nationalId: form.nationalId, email: form.email, organization: form.organization, county: form.county, pin: form.pin });
+    const result = register({ nationalId: form.nationalId, email: form.email, organization: form.organization, county: form.county, pin: form.pin });
     if (!result.success) {
       setErrors({ general: result.error! });
     } else {

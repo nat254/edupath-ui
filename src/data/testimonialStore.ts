@@ -21,6 +21,10 @@ export const testimonialStore = {
     testimonials = [{ ...t, id: `t${Date.now()}` }, ...testimonials];
     listeners.forEach((l) => l());
   },
+  remove: (id: string) => {
+    testimonials = testimonials.filter((t) => t.id !== id);
+    listeners.forEach((l) => l());
+  },
   subscribe: (listener: () => void) => {
     listeners.push(listener);
     return () => {

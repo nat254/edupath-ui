@@ -12,23 +12,25 @@ import CourseListPage from "@/pages/CourseListPage";
 import CreateCoursePage from "@/pages/CreateCoursePage";
 import CoursePlayerPage from "@/pages/CoursePlayerPage";
 import LearnersPage from "@/pages/LearnersPage";
+import TestimonialsPage from "@/pages/Testimonials";
 import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
 import { ReactNode } from "react";
+import ResetPinPage from "@/pages/ResetPinPage";
 
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children, adminOnly = false }: { children: ReactNode; adminOnly?: boolean }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
+  const { user } = useAuth();
+  // if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
   if (!user) return <Navigate to="/login" replace />;
   if (adminOnly && user.role !== "admin") return <Navigate to="/dashboard" replace />;
   return <AppLayout>{children}</AppLayout>;
 };
 
 const PublicRoute = ({ children }: { children: ReactNode }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
+  const { user } = useAuth();
+  //if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
   if (user) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 };
@@ -50,6 +52,8 @@ const App = () => (
             <Route path="/courses/:courseId/edit" element={<ProtectedRoute adminOnly><CreateCoursePage /></ProtectedRoute>} />
             <Route path="/courses/:courseId/player" element={<ProtectedRoute><CoursePlayerPage /></ProtectedRoute>} />
             <Route path="/learners" element={<ProtectedRoute adminOnly><LearnersPage /></ProtectedRoute>} />
+            <Route path="/testimonials" element={<ProtectedRoute adminOnly><TestimonialsPage /></ProtectedRoute>} />
+            <Route path="/reset-pin" element={<PublicRoute><ResetPinPage /></PublicRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
