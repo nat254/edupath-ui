@@ -265,6 +265,30 @@ const AdminDashboard = () => {
     return Object.entries(map).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
   }, [filteredLearners]);
 
+  // Detailed county analytics — learners, completed, in-progress, completion rate per county
+  const countyAnalytics = useMemo(() => {
+    const map: Record<string, { learners: number; completed: number; inProgress: number }> = {};
+    filteredLearners.forEach((l) => {
+      if (!l.county) return;
+      if (!map[l.county]) map[l.county] = { learners: 0, completed: 0, inProgress: 0 };
+      map[l.county].learners += 1;
+      map[l.county].completed += l.coursesCompleted;
+      map[l.county].inProgress += l.coursesInProgress;
+    });
+    return Object.entries(map)
+      .map(([name, v]) => {
+        const total = v.completed + v.inProgress;
+        return {
+          name,
+          learners: v.learners,
+          completed: v.completed,
+          inProgress: v.inProgress,
+          completionRate: total ? Math.round((v.completed / total) * 100) : 0,
+        };
+      })
+      .sort((a, b) => b.learners - a.learners);
+  }, [filteredLearners]);
+
   // Deterministic hash for stable pseudo-random values per course
   const hashStr = (s: string) => {
     let h = 0;
@@ -680,6 +704,73 @@ const AdminDashboard = () => {
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} allowDecimals={false} />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Bar dataKey="count" fill="hsl(var(--chart-4))" radius={[4, 4, 0, 0]} name="Learners" animationDuration={500} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* County Analytics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Course Activity by County</CardTitle>
+              <ExportButtons
+                data={countyAnalytics.map(d => ({
+                  County: d.name,
+                  Learners: d.learners,
+                  Completed: d.completed,
+                  "In Progress": d.inProgress,
+                  "Completion Rate (%)": d.completionRate,
+                }))}
+                filename="county-analytics"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">Completed vs In Progress courses per county</p>
+          </CardHeader>
+          <CardContent>
+            {countyAnalytics.length === 0 ? (
+              <div className="flex items-center justify-center h-[300px] text-muted-foreground text-sm">No data</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={countyAnalytics.slice(0, 10)}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={10} angle={-30} textAnchor="end" height={60} interval={0} />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} allowDecimals={false} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend />
+                  <Bar dataKey="completed" stackId="c" fill="hsl(var(--primary))" name="Completed" animationDuration={500} />
+                  <Bar dataKey="inProgress" stackId="c" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} name="In Progress" animationDuration={500} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Completion Rate by County</CardTitle>
+              <ExportButtons
+                data={countyAnalytics.map(d => ({ County: d.name, "Completion Rate (%)": d.completionRate, Learners: d.learners }))}
+                filename="county-completion-rate"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">Top counties ranked by completion percentage</p>
+          </CardHeader>
+          <CardContent>
+            {countyAnalytics.length === 0 ? (
+              <div className="flex items-center justify-center h-[300px] text-muted-foreground text-sm">No data</div>
+            ) : (
+              <ResponsiveContainer width="100%" height={Math.max(280, countyAnalytics.length * 36)}>
+                <BarChart data={[...countyAnalytics].sort((a, b) => b.completionRate - a.completionRate).slice(0, 10)} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} domain={[0, 100]} tickFormatter={v => `${v}%`} />
+                  <YAxis dataKey="name" type="category" width={100} stroke="hsl(var(--muted-foreground))" fontSize={11} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`${value}%`, "Completion Rate"]} />
+                  <Bar dataKey="completionRate" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} animationDuration={500} />
                 </BarChart>
               </ResponsiveContainer>
             )}
