@@ -44,15 +44,19 @@ const TopNavbar = () => {
             </div>
           </PopoverContent>
         </Popover>
-        <div className="hidden sm:flex items-center gap-2 text-sm">
-          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium text-xs">
+        <button
+          onClick={() => navigate("/profile")}
+          className="hidden sm:flex items-center gap-2 text-sm rounded-lg px-2 py-1 hover:bg-muted transition-colors"
+          title="View profile"
+        >
+          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-medium text-xs shrink-0">
             {user?.name?.charAt(0)}
           </div>
-          <div>
+          <div className="text-left">
             <p className="font-medium leading-none">{user?.name}</p>
             <p className="text-xs text-muted-foreground capitalize">{user?.role}</p>
           </div>
-        </div>
+        </button>
       </div>
     </header>
   );

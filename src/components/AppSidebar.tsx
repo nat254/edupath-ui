@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, BookOpen, Users, LogOut, GraduationCap, MessageSquare,
+  LayoutDashboard, BookOpen, Users, LogOut, GraduationCap, MessageSquare, Star, UserCircle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,15 +11,18 @@ import {
 } from "@/components/ui/sidebar";
 
 const adminLinks = [
-  { title: "Dashboard",     url: "/dashboard",    icon: LayoutDashboard },
-  { title: "Courses",       url: "/courses",      icon: BookOpen },
-  { title: "Learners",      url: "/learners",     icon: Users },
-  { title: "Testimonials",  url: "/testimonials", icon: MessageSquare },
+  { title: "Dashboard",       url: "/dashboard",    icon: LayoutDashboard },
+  { title: "Courses",         url: "/courses",      icon: BookOpen },
+  { title: "Learners",        url: "/learners",     icon: Users },
+  { title: "Course Feedback", url: "/feedback",     icon: Star },
+  { title: "Testimonials",    url: "/testimonials", icon: MessageSquare },
+  { title: "Profile",         url: "/profile",      icon: UserCircle },
 ];
 
 const learnerLinks = [
   { title: "My Learning", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Courses", url: "/courses", icon: BookOpen },
+  { title: "Courses",     url: "/courses",   icon: BookOpen },
+  { title: "Profile",     url: "/profile",   icon: UserCircle },
 ];
 
 export function AppSidebar() {

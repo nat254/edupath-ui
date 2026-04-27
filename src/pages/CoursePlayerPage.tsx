@@ -1,6 +1,9 @@
 import { useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { courseStore } from "@/data/courseStore";
+import { enrollmentStore } from "@/data/enrollmentStore";
+import { feedbackStore } from "@/data/feedbackStore";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -8,11 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import StarRating from "@/components/StarRating";
-import { CheckCircle, XCircle } from "lucide-react";
+import { CheckCircle, XCircle, BookOpen } from "lucide-react";
 
 const CoursePlayerPage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const userId = user?.nationalId ?? "";
+
   const course = courseStore.getById(courseId ?? "");
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -25,12 +31,48 @@ const CoursePlayerPage = () => {
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
 
-  if (!course)
+  // ── Guard: course must exist ─────────────────────────────────────────────
+  if (!course) {
     return (
       <div className="p-8 text-center text-muted-foreground">
-        Course not found
+        Course not found.
       </div>
     );
+  }
+
+  // ── Guard: user must be enrolled ─────────────────────────────────────────
+  const isEnrolled = userId
+    ? enrollmentStore.isEnrolled(userId, course.id)
+    : false;
+
+  if (!isEnrolled) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-6 py-24 text-center">
+        <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+          <BookOpen className="h-10 w-10 text-primary/60" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-xl font-bold">You haven't started this course yet</h2>
+          <p className="text-muted-foreground max-w-sm">
+            Go to the Courses page, click{" "}
+            <span className="font-medium text-foreground">"Start Course"</span>{" "}
+            on <span className="font-medium text-foreground">"{course.title}"</span> to
+            begin your learning journey.
+          </p>
+        </div>
+        <Button onClick={() => navigate("/courses")}>Browse Courses</Button>
+      </div>
+    );
+  }
+
+  // ── Progress helpers ─────────────────────────────────────────────────────
+  const allDone = videoComplete && quizSubmitted;
+  const overallProgress =
+    videoComplete && quizSubmitted
+      ? 100
+      : videoComplete
+        ? 50
+        : videoProgress / 2;
 
   const handleTimeUpdate = () => {
     if (!videoRef.current) return;
@@ -38,6 +80,11 @@ const CoursePlayerPage = () => {
       (videoRef.current.currentTime / videoRef.current.duration) * 100;
     setVideoProgress(pct);
     if (pct > 90) setVideoComplete(true);
+
+    // Persist progress to enrollment store
+    const currentOverall =
+      pct > 90 && quizSubmitted ? 100 : pct > 90 ? 50 : pct / 2;
+    if (userId) enrollmentStore.updateProgress(userId, course.id, currentOverall);
   };
 
   const handleQuizSubmit = () => {
@@ -45,7 +92,6 @@ const CoursePlayerPage = () => {
     course.quiz.forEach((q) => {
       const selected = quizAnswers[q.id] ?? [];
       if (q.isMultiple && q.correctIndexes) {
-        // All correct indexes must be selected, no extras
         const allCorrect =
           q.correctIndexes.every((ci) => selected.includes(ci)) &&
           selected.every((si) => q.correctIndexes!.includes(si));
@@ -58,6 +104,13 @@ const CoursePlayerPage = () => {
     setQuizScore(score);
     setQuizSubmitted(true);
     toast.success(`Quiz completed! Score: ${score}%`);
+
+    // Mark as complete in enrollment store if video was already done
+    if (userId && videoComplete) {
+      enrollmentStore.updateProgress(userId, course.id, 100);
+    } else if (userId) {
+      enrollmentStore.updateProgress(userId, course.id, 50);
+    }
   };
 
   const handleFeedback = () => {
@@ -65,17 +118,18 @@ const CoursePlayerPage = () => {
       toast.error("Please select a rating");
       return;
     }
+    // Persist to feedbackStore so admin can review it
+    feedbackStore.submit({
+      courseId: course.id,
+      courseName: course.title,
+      userId: userId,
+      userName: user?.name ?? "Learner",
+      rating,
+      comment: feedbackText.trim(),
+    });
     setFeedbackSubmitted(true);
     toast.success("Thank you for your feedback!");
   };
-
-  const allDone = videoComplete && quizSubmitted;
-  const overallProgress =
-    videoComplete && quizSubmitted
-      ? 100
-      : videoComplete
-        ? 50
-        : videoProgress / 2;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -128,7 +182,16 @@ const CoursePlayerPage = () => {
             controls
             className="w-full rounded-lg bg-foreground/5"
             onTimeUpdate={handleTimeUpdate}
-            onEnded={() => setVideoComplete(true)}
+            onEnded={() => {
+              setVideoComplete(true);
+              if (userId) {
+                enrollmentStore.updateProgress(
+                  userId,
+                  course.id,
+                  quizSubmitted ? 100 : 50,
+                );
+              }
+            }}
           />
           {videoComplete && (
             <div className="mt-2 flex items-center gap-1 text-success text-sm">
@@ -170,7 +233,6 @@ const CoursePlayerPage = () => {
                       disabled={quizSubmitted}
                       onClick={() => {
                         if (q.isMultiple) {
-                          // Toggle selection for multiple answers
                           setQuizAnswers((p) => {
                             const prev = p[q.id] ?? [];
                             const updated = prev.includes(oi)
@@ -179,7 +241,6 @@ const CoursePlayerPage = () => {
                             return { ...p, [q.id]: updated };
                           });
                         } else {
-                          // Replace selection for single answer
                           setQuizAnswers((p) => ({ ...p, [q.id]: [oi] }));
                         }
                       }}
@@ -192,7 +253,6 @@ const CoursePlayerPage = () => {
             `}
                     >
                       <span className="flex items-center gap-2">
-                        {/* Show checkbox or radio indicator */}
                         <span
                           className={`h-4 w-4 shrink-0 rounded-${q.isMultiple ? "sm" : "full"} border flex items-center justify-center text-xs
                 ${selected ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground/40"}

@@ -17,6 +17,8 @@ import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
 import { ReactNode } from "react";
 import ResetPinPage from "@/pages/ResetPinPage";
+import CourseFeedbackPage from "@/pages/CourseFeedbackPage";
+import ProfilePage from "@/pages/ProfilePage";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +55,8 @@ const App = () => (
             <Route path="/courses/:courseId/player" element={<ProtectedRoute><CoursePlayerPage /></ProtectedRoute>} />
             <Route path="/learners" element={<ProtectedRoute adminOnly><LearnersPage /></ProtectedRoute>} />
             <Route path="/testimonials" element={<ProtectedRoute adminOnly><TestimonialsPage /></ProtectedRoute>} />
+            <Route path="/feedback" element={<ProtectedRoute adminOnly><CourseFeedbackPage /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/reset-pin" element={<PublicRoute><ResetPinPage /></PublicRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
