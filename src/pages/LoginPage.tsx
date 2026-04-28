@@ -1,6 +1,6 @@
 // ─── LoginPage.tsx ────────────────────────────────────────────────────────────
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ const LoginPage = () => {
   const [nationalId, setNationalId] = useState("");
   const [pin, setPin] = useState("");
   const [errors, setErrors] = useState<{ nationalId?: string; pin?: string; general?: string }>({});
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -38,10 +39,12 @@ const LoginPage = () => {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (ev: React.FormEvent) => {
+  const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
-    const result = login(nationalId, pin);
+    setLoading(true);
+    const result = await login(nationalId, pin);
+    setLoading(false);
     if (!result.success) setErrors({ general: result.error });
     else navigate("/dashboard");
   };
@@ -118,7 +121,9 @@ const LoginPage = () => {
               </div>
             </div>
 
-            <Button type="submit" className="w-full">Login</Button>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Signing in…" : "Login"}
+            </Button>
 
             <p className="text-center text-sm text-muted-foreground">
               Don't have an account?{" "}
@@ -127,11 +132,6 @@ const LoginPage = () => {
               </Link>
             </p>
 
-            <div className="mt-4 p-3 rounded-md bg-muted text-xs text-muted-foreground">
-              <p className="font-medium mb-1">Demo Credentials:</p>
-              <p>Admin: ID <strong>1234</strong>, PIN <strong>1234</strong></p>
-              <p>Learner: ID <strong>5678</strong>, PIN <strong>1234</strong></p>
-            </div>
           </form>
         </CardContent>
       </Card>

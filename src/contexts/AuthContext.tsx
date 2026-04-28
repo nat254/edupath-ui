@@ -13,11 +13,26 @@ export interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (nationalId: string, pin: string) => { success: boolean; error?: string };
-  register: (data: { nationalId: string; email: string; organization: string; county: string; pin: string }) => { success: boolean; error?: string };
-  logout: () => void;
-  updateProfile: (data: Partial<Pick<User, "name" | "email" | "organization" | "county">>) => void;
-  changePin: (currentPin: string, newPin: string) => { success: boolean; error?: string };
+  login: (
+    nationalId: string,
+    pin: string,
+  ) => Promise<{ success: boolean; error?: string }>;
+  register: (data: {
+    nationalId: string;
+    name: string;
+    email: string;
+    organization: string;
+    county: string;
+    pin: string;
+  }) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  updateProfile: (
+    data: Partial<Pick<User, "name" | "email" | "organization" | "county">>,
+  ) => Promise<{ success: boolean; error?: string }>;
+  changePin: (
+    currentPin: string,
+    newPin: string,
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -28,65 +43,102 @@ export const useAuth = () => {
   return ctx;
 };
 
-const mockUsers: User[] = [
-  { nationalId: "1234", email: "admin@tms.co.ke", organization: "Kenyatta National Hospital - FID-12-324627", county: "Nairobi", role: "admin", name: "Admin User" },
-  { nationalId: "5678", email: "learner@tms.co.ke", organization: "Kenyatta National Hospital - FID-12-324627", county: "Nairobi", role: "learner", name: "Jane Wanjiku" },
-];
-
-// Track current PIN per nationalId (in-memory)
-const pinMap: Record<string, string> = {};
+const API = "http://localhost:5000";
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
-  const login = (nationalId: string, pin: string): { success: boolean; error?: string } => {
-    const found = mockUsers.find((u) => u.nationalId === nationalId);
-    if (!found) return { success: false, error: "Invalid National ID or PIN" };
-    const expectedPin = pinMap[nationalId] ?? "1234";
-    if (pin !== expectedPin) return { success: false, error: "Invalid National ID or PIN" };
-    setUser(found);
-    return { success: true };
-  };
-
-  const updateProfile = (data: Partial<Pick<User, "name" | "email" | "organization" | "county">>) => {
-    if (!user) return;
-    const updated = { ...user, ...data };
-    // Sync back into mockUsers array so re-login picks up changes
-    const idx = mockUsers.findIndex((u) => u.nationalId === user.nationalId);
-    if (idx !== -1) mockUsers[idx] = updated;
-    setUser(updated);
-  };
-
-  const changePin = (currentPin: string, newPin: string): { success: boolean; error?: string } => {
-    if (!user) return { success: false, error: "Not logged in" };
-    const expected = pinMap[user.nationalId] ?? "1234";
-    if (currentPin !== expected) return { success: false, error: "Current PIN is incorrect" };
-    if (newPin.length < 4) return { success: false, error: "PIN must be at least 4 digits" };
-    pinMap[user.nationalId] = newPin;
-    return { success: true };
-  };
-
-  const register = (data: { nationalId: string; email: string; organization: string; county: string; pin: string }): { success: boolean; error?: string } => {
-    if (mockUsers.find((u) => u.nationalId === data.nationalId)) {
-      return { success: false, error: "National ID already registered" };
+  const login = async (nationalId: string, pin: string) => {
+    try {
+      const res = await fetch(`${API}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nationalId, pin }),
+      });
+      const data = await res.json();
+      if (!res.ok) return { success: false, error: data.error };
+      setUser(data);
+      return { success: true };
+    } catch {
+      return { success: false, error: "Server error" };
     }
-    const newUser: User = {
-      nationalId: data.nationalId,
-      email: data.email,
-      organization: data.organization,
-      county: data.county,
-      role: "learner",
-      name: "New Learner",
-    };
-    mockUsers.push(newUser);
-    setUser(newUser);
-    return { success: true };
   };
 
-  const logout = () => setUser(null);
+  const register = async (data: {
+    nationalId: string;
+    email: string;
+    organization: string;
+    name:string;
+    county: string;
+    pin: string;
+  }) => {
+    try {
+      const res = await fetch(`${API}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = await res.json();
+      if (!res.ok) return { success: false, error: result.error };
+      setUser(result);
+      return { success: true };
+    } catch (err){
+      console.error("Register error:", err); // just log it
+      return { success: false, error: "Server error" };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await fetch(`${API}/auth/logout`, { method: "POST" });
+    } finally {
+      setUser(null);
+    }
+  };
+
+  const updateProfile = async (
+    data: Partial<Pick<User, "name" | "email" | "organization" | "county">>,
+  ) => {
+    if (!user) return { success: false, error: "Not logged in" };
+    try {
+      const res = await fetch(`${API}/auth/profile`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nationalId: user.nationalId, ...data }),
+      });
+      const result = await res.json();
+      if (!res.ok) return { success: false, error: result.error };
+      setUser({ ...user, ...result });
+      return { success: true };
+    } catch {
+      return { success: false, error: "Server error" };
+    }
+  };
+
+  const changePin = async (currentPin: string, newPin: string) => {
+    if (!user) return { success: false, error: "Not logged in" };
+    try {
+      const res = await fetch(`${API}/auth/change-pin`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nationalId: user.nationalId,
+          currentPin,
+          newPin,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) return { success: false, error: result.error };
+      return { success: true };
+    } catch {
+      return { success: false, error: "Server error" };
+    }
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, updateProfile, changePin }}>
+    <AuthContext.Provider
+      value={{ user, login, register, logout, updateProfile, changePin }}
+    >
       {children}
     </AuthContext.Provider>
   );

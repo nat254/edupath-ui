@@ -32,8 +32,8 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const links = user?.role === "admin" ? adminLinks : learnerLinks;
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 

@@ -157,15 +157,17 @@ const ProfilePage = () => {
     return e;
   };
 
-  const handleSaveInfo = () => {
+  const handleSaveInfo = async () => {
     const e = validateInfo();
     if (Object.keys(e).length) { setInfoErrors(e); return; }
     setInfoSaving(true);
-    setTimeout(() => {
-      updateProfile({ name: name.trim(), email: email.trim(), organization, county });
-      setInfoSaving(false);
+    const result = await updateProfile({ name: name.trim(), email: email.trim(), organization, county });
+    setInfoSaving(false);
+    if (result.success) {
       toast.success("Profile updated successfully");
-    }, 400); // tiny delay for perceived save
+    } else {
+      toast.error(result.error ?? "Failed to update profile");
+    }
   };
 
   // ── PIN form ────────────────────────────────────────────────────────────────
@@ -175,7 +177,7 @@ const ProfilePage = () => {
   const [pinErrors, setPinErrors] = useState<Record<string, string>>({});
   const [pinSaving, setPinSaving] = useState(false);
 
-  const handleChangePin = () => {
+  const handleChangePin = async () => {
     const e: Record<string, string> = {};
     if (!currentPin) e.current = "Enter your current PIN";
     if (newPin.length < 4) e.new = "New PIN must be at least 4 digits";
@@ -183,16 +185,14 @@ const ProfilePage = () => {
     if (Object.keys(e).length) { setPinErrors(e); return; }
 
     setPinSaving(true);
-    setTimeout(() => {
-      const result = changePin(currentPin, newPin);
-      setPinSaving(false);
-      if (result.success) {
-        setCurrentPin(""); setNewPin(""); setConfirmPin(""); setPinErrors({});
-        toast.success("PIN changed successfully");
-      } else {
-        setPinErrors({ current: result.error ?? "Failed to change PIN" });
-      }
-    }, 400);
+    const result = await changePin(currentPin, newPin);
+    setPinSaving(false);
+    if (result.success) {
+      setCurrentPin(""); setNewPin(""); setConfirmPin(""); setPinErrors({});
+      toast.success("PIN changed successfully");
+    } else {
+      setPinErrors({ current: result.error ?? "Failed to change PIN" });
+    }
   };
 
   // ── Activity stats (learners only) ──────────────────────────────────────────
@@ -432,7 +432,7 @@ const ProfilePage = () => {
               />
 
               <p className="text-xs text-muted-foreground">
-                Default PIN is <span className="font-mono font-medium">1234</span>. Use at least 4 digits.
+                Use at least 4 digits.
               </p>
 
               <Button onClick={handleChangePin} disabled={pinSaving} className="gap-2 w-full sm:w-auto">

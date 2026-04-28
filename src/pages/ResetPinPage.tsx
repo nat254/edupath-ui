@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -80,6 +80,8 @@ const ResetPinPage = () => {
   const [newPin,        setNewPin       ] = useState("");
   const [confirmPin,    setConfirmPin   ] = useState("");
   const [mismatchError, setMismatchError] = useState(false);
+  const [apiError,      setApiError     ] = useState("");
+  const [loading,       setLoading      ] = useState(false);
 
   // ── Step: new PIN complete ─────────────────────────────────────────────────
   const handleNewPinComplete = (val: string) => {
@@ -92,13 +94,12 @@ const ResetPinPage = () => {
   };
 
   // ── Step: confirm PIN complete ─────────────────────────────────────────────
-  const handleConfirmPinComplete = (val: string) => {
+  const handleConfirmPinComplete = useCallback(async (val: string) => {
     setConfirmPin(val);
     if (val.length !== 4) return;
 
     if (val !== newPin) {
       setMismatchError(true);
-      // Reset back to step 1 after a short delay so the error is visible
       setTimeout(() => {
         setNewPin("");
         setConfirmPin("");
@@ -108,12 +109,32 @@ const ResetPinPage = () => {
       return;
     }
 
-    // ── Wire your actual reset logic here ──────────────────────────────────
-    // Supabase:  await supabase.auth.updateUser({ password: val })
-    // Custom:    await resetPin(nationalId, val)
-    // ──────────────────────────────────────────────────────────────────────
-    setStep("success");
-  };
+    setLoading(true);
+    setApiError("");
+    try {
+      const res = await fetch("http://localhost:5000/auth/reset-pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nationalId, email, newPin: val }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setApiError(data.error ?? "Failed to reset PIN. Please try again.");
+        setNewPin("");
+        setConfirmPin("");
+        setStep("new-pin");
+      } else {
+        setStep("success");
+      }
+    } catch {
+      setApiError("Server error. Please try again.");
+      setNewPin("");
+      setConfirmPin("");
+      setStep("new-pin");
+    } finally {
+      setLoading(false);
+    }
+  }, [newPin, nationalId, email]);
 
   const handleStartOver = () => {
     setNewPin("");
@@ -145,6 +166,13 @@ const ResetPinPage = () => {
           {/* Step indicator — hidden on success screen */}
           {step !== "success" && <StepIndicator current={step} />}
 
+          {/* API error banner */}
+          {apiError && (
+            <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm text-center">
+              {apiError}
+            </div>
+          )}
+
           {/* ── Step 1: new PIN ── */}
           {step === "new-pin" && (
             <div className="flex flex-col items-center gap-4">
@@ -170,11 +198,15 @@ const ResetPinPage = () => {
                 Re-enter your new PIN to confirm
               </p>
               <PinInput value={confirmPin} onChange={handleConfirmPinComplete} />
+              {loading && (
+                <p className="text-xs text-muted-foreground">Saving new PIN…</p>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
                 className="text-xs text-muted-foreground"
                 onClick={handleStartOver}
+                disabled={loading}
               >
                 ← Start over
               </Button>

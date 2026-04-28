@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { organizations, kenyanCounties } from "@/data/mockData";
@@ -11,8 +11,9 @@ import PinInput from "@/components/PinInput";
 import { GraduationCap } from "lucide-react";
 
 const RegisterPage = () => {
-  const [form, setForm] = useState({ nationalId: "", email: "", organization: "", county: "", pin: "", confirmPin: "" });
+  const [form, setForm] = useState({ nationalId: "", name: "", email: "", organization: "", county: "", pin: "", confirmPin: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -24,6 +25,7 @@ const RegisterPage = () => {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!/^\d{4,10}$/.test(form.nationalId)) e.nationalId = "Must be 4–10 digits";
+    if (!form.name.trim()) e.name = "Full name is required";
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Enter a valid email";
     if (!form.organization) e.organization = "Select an organization";
     if (!form.county) e.county = "Select a county";
@@ -33,10 +35,19 @@ const RegisterPage = () => {
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = (ev: React.FormEvent) => {
+  const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
-    const result = register({ nationalId: form.nationalId, email: form.email, organization: form.organization, county: form.county, pin: form.pin });
+    setLoading(true);
+    const result = await register({
+      nationalId: form.nationalId,
+      name: form.name.trim(),
+      email: form.email,
+      organization: form.organization,
+      county: form.county,
+      pin: form.pin,
+    });
+    setLoading(false);
     if (!result.success) {
       setErrors({ general: result.error! });
     } else {
@@ -63,6 +74,11 @@ const RegisterPage = () => {
               <Label>National ID</Label>
               <Input placeholder="Enter a valid National ID" value={form.nationalId} onChange={(e) => set("nationalId", e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" />
               {errors.nationalId && <p className="text-destructive text-xs">{errors.nationalId}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label>Full Name</Label>
+              <Input placeholder="Your full name" value={form.name} onChange={(e) => set("name", e.target.value)} />
+              {errors.name && <p className="text-destructive text-xs">{errors.name}</p>}
             </div>
             <div className="space-y-2">
               <Label>Email</Label>
@@ -105,7 +121,9 @@ const RegisterPage = () => {
               error={errors.confirmPin}
               showToggle={false}
             />
-            <Button type="submit" className="w-full">Create Account</Button>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Creating account…" : "Create Account"}
+            </Button>
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{" "}
               <Link to="/login" className="text-primary font-medium hover:underline">Sign In</Link>
