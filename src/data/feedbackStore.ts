@@ -1,3 +1,5 @@
+const BASE = "http://localhost:5000";
+
 export interface CourseFeedback {
   id: string;
   courseId: string;
@@ -9,51 +11,7 @@ export interface CourseFeedback {
   submittedAt: string;   // ISO date string
 }
 
-// Seed data so the admin page is populated on first load
-const seed: CourseFeedback[] = [
-  {
-    id: "fb1",
-    courseId: "1",
-    courseName: "Introduction to Patient Safety",
-    userId: "5678",
-    userName: "Jane Wanjiku",
-    rating: 5,
-    comment: "Very well structured. The quiz really helped me retain the material.",
-    submittedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-  },
-  {
-    id: "fb2",
-    courseId: "2",
-    courseName: "Infection Control Fundamentals",
-    userId: "5678",
-    userName: "Jane Wanjiku",
-    rating: 4,
-    comment: "Practical content. Would love more real-world case studies.",
-    submittedAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-  },
-  {
-    id: "fb3",
-    courseId: "1",
-    courseName: "Introduction to Patient Safety",
-    userId: "9999",
-    userName: "Pete Mondi",
-    rating: 3,
-    comment: "Good introduction but felt a bit short on advanced topics.",
-    submittedAt: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-  },
-  {
-    id: "fb4",
-    courseId: "3",
-    courseName: "Emergency Response Training",
-    userId: "9999",
-    userName: "Pete Mondi",
-    rating: 5,
-    comment: "Excellent! The scenario-based questions were very realistic.",
-    submittedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-  },
-];
-
-let feedbackList: CourseFeedback[] = [...seed];
+let feedbackList: CourseFeedback[] = [];
 let listeners: (() => void)[] = [];
 
 function emit() {
@@ -80,17 +38,85 @@ export const feedbackStore = {
     return feedbackList.filter((f) => f.courseId === courseId);
   },
 
-  submit(entry: Omit<CourseFeedback, "id" | "submittedAt">) {
-    const newEntry: CourseFeedback = {
-      ...entry,
-      id: `fb${Date.now()}`,
-      submittedAt: new Date().toISOString(),
-    };
-    feedbackList = [newEntry, ...feedbackList];
-    emit();
+  /** Fetch all feedback from the backend (admin view) */
+  async fetchAll() {
+    try {
+      const res = await fetch(`${BASE}/feedback`);
+      if (!res.ok) throw new Error(await res.text());
+      const data: CourseFeedback[] = await res.json();
+      feedbackList = data;
+      emit();
+    } catch (err) {
+      console.error("feedbackStore.fetchAll error:", err);
+    }
   },
 
-  remove(id: string) {
+  /** Fetch feedback for a specific course */
+  async fetchByCourse(courseId: string) {
+    try {
+      const res = await fetch(`${BASE}/feedback/${courseId}`);
+      if (!res.ok) throw new Error(await res.text());
+      const data: CourseFeedback[] = await res.json();
+      // Merge into the list (replace entries for this course)
+      feedbackList = [
+        ...feedbackList.filter((f) => f.courseId !== courseId),
+        ...data,
+      ];
+      emit();
+    } catch (err) {
+      console.error("feedbackStore.fetchByCourse error:", err);
+    }
+  },
+
+  /**
+   * Submit (or update) feedback for a course.
+   * Returns the saved entry on success, throws on failure.
+   */
+  async submit(entry: {
+    userId: string;
+    courseId: string;
+    courseName: string;
+    userName: string;
+    rating: number;
+    comment: string;
+  }): Promise<CourseFeedback> {
+    const res = await fetch(`${BASE}/feedback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId:   entry.userId,
+        courseId: entry.courseId,
+        rating:   entry.rating,
+        comment:  entry.comment,
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(body.error ?? "Failed to submit feedback");
+    }
+
+    const saved: CourseFeedback = await res.json();
+    // Ensure courseName is populated (backend doesn't re-join on upsert response)
+    saved.courseName = saved.courseName ?? entry.courseName;
+
+    // Update local cache
+    feedbackList = [
+      saved,
+      ...feedbackList.filter(
+        (f) => !(f.courseId === saved.courseId && f.userId === saved.userId),
+      ),
+    ];
+    emit();
+    return saved;
+  },
+
+  async remove(id: string) {
+    const res = await fetch(`${BASE}/feedback/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }));
+      throw new Error(body.error ?? "Failed to delete feedback");
+    }
     feedbackList = feedbackList.filter((f) => f.id !== id);
     emit();
   },

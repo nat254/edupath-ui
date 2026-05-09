@@ -1,6 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useSyncExternalStore, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { categories } from "@/data/mockData";
+import { categoryStore } from "@/data/categoryStore";
 import { courseStore } from "@/data/courseStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,15 @@ const CreateCoursePage = () => {
   const { courseId } = useParams();
   const existing = courseId ? courseStore.getById(courseId) : null;
   const isEdit = !!existing;
+
+  // Ensure courses are loaded from API (needed for edit mode)
+  useEffect(() => {
+    courseStore.fetchAll();
+    categoryStore.fetchAll();
+  }, []);
+
+  const getNames = useCallback(() => categoryStore.getNames(), []);
+  const categories = useSyncExternalStore(categoryStore.subscribe, getNames);
 
   const [form, setForm] = useState({
     title: existing?.title ?? "",
@@ -201,43 +210,42 @@ const CreateCoursePage = () => {
     if (pdfInputRef.current) pdfInputRef.current.value = "";
   };
 
-  const handleSubmit = (ev: React.FormEvent) => {
+  const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     if (!validate()) return;
 
-    const videoUrl = videoFile ? URL.createObjectURL(videoFile) : videoPreview;
-    const pdfUrl = pdfFile
-      ? URL.createObjectURL(pdfFile)
-      : (existing?.pdfUrl ?? undefined);
+    const formData = new FormData();
+    formData.append("title", form.title.trim());
+    formData.append("category", form.category);
+    formData.append("objectives", form.objectives.trim());
+    formData.append("duration", form.duration.trim());
 
-    const courseData = {
-      title: form.title.trim(),
-      category: form.category,
-      objectives: form.objectives.trim(),
-      duration: form.duration.trim(),
-      videoUrl,
-      pdfUrl,
-      quiz: quiz.map((q, i) => ({
-        id: `q${i + 1}`,
-        question: q.question.trim(),
-        options: q.options.map((o) => o.trim()),
-        correctIndex: q.isMultiple
-          ? (q.correctIndexes[0] ?? 0)
-          : q.correctIndex,
-        correctIndexes: q.isMultiple ? q.correctIndexes : undefined,
-        isMultiple: q.isMultiple,
-      })),
-      coverImage: coverImage || undefined,
-    };
+    if (videoFile) formData.append("video", videoFile);
+    if (pdfFile) formData.append("pdf", pdfFile);
+    if (coverImage) formData.append("cover_image", coverImage);
 
-    if (isEdit && courseId) {
-      courseStore.update(courseId, courseData);
-      toast.success("Course updated successfully!");
-    } else {
-      courseStore.add(courseData);
-      toast.success("Course created successfully!");
+    const quizData = quiz.map((q, i) => ({
+      id: `q${i + 1}`,
+      question: q.question.trim(),
+      options: q.options.map((o) => o.trim()),
+      correctIndex: q.isMultiple ? (q.correctIndexes[0] ?? 0) : q.correctIndex,
+      correctIndexes: q.isMultiple ? q.correctIndexes : undefined,
+      isMultiple: q.isMultiple,
+    }));
+    formData.append("quiz", JSON.stringify(quizData));
+
+    try {
+      if (isEdit && courseId) {
+        await courseStore.update(courseId, formData);
+        toast.success("Course updated successfully!");
+      } else {
+        await courseStore.add(formData);
+        toast.success("Course created successfully!");
+      }
+      navigate("/courses");
+    } catch {
+      toast.error("Failed to save course. Please try again.");
     }
-    navigate("/courses");
   };
 
   // cover image
@@ -558,9 +566,11 @@ const CreateCoursePage = () => {
                         }`}
                       >
                         {q.isMultiple ? "✓ Multiple answers" : "Single answer"}
-                        
                       </button>
-                      <p className="text-xs px-2 font-bold"> 👈 Click to toggle</p>
+                      <p className="text-xs px-2 font-bold">
+                        {" "}
+                        👈 Click to toggle
+                      </p>
                     </div>
 
                     {q.options.map((opt, oIdx) => (

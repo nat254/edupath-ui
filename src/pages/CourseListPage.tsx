@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import { courseStore } from "@/data/courseStore";
 import { enrollmentStore } from "@/data/enrollmentStore";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,7 +35,7 @@ const CourseListPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  const userId = user?.nationalId ?? "";
+ const userId = user?.id ?? "";
 
   const courses = useSyncExternalStore(
     courseStore.subscribe,
@@ -45,12 +45,22 @@ const CourseListPage = () => {
   // Subscribe to enrollment store so Start/Continue buttons update reactively
   useSyncExternalStore(enrollmentStore.subscribe, enrollmentStore.getSnapshot);
 
-  const handleDelete = (id: string, title: string) => {
-    courseStore.remove(id);
-    toast.success(`"${title}" deleted`);
+  // Load courses & user's enrollments from API on mount
+  useEffect(() => {
+    courseStore.fetchAll();
+    if (userId) enrollmentStore.fetchMyEnrollments(userId);
+  }, [userId]);
+
+  const handleDelete = async (id: string, title: string) => {
+    try {
+      await courseStore.remove(id);
+      toast.success(`"${title}" deleted`);
+    } catch {
+      toast.error("Failed to delete course");
+    }
   };
 
-  const handleStartOrContinue = (
+  const handleStartOrContinue = async (
     e: React.MouseEvent,
     course: Course,
   ) => {
@@ -60,7 +70,7 @@ const CourseListPage = () => {
       return;
     }
     if (!enrollmentStore.isEnrolled(userId, course.id)) {
-      enrollmentStore.enroll(userId, course.id);
+      await enrollmentStore.enroll(userId, course.id);
       toast.success(`"${course.title}" added to My Learning!`);
     }
     navigate(`/courses/${course.id}/player`);

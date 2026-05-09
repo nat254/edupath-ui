@@ -3,8 +3,6 @@ import { testimonialStore, Testimonial } from "@/data/testimonialStore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -12,13 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   Star,
@@ -30,9 +21,9 @@ import {
   Sparkles,
   Pin,
   PinOff,
-  Plus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -90,14 +81,14 @@ const RatingStars = ({
 
 const TestimonialCard = ({
   testimonial,
-  featured,
+  approved,
   onDelete,
-  onToggleFeature,
+  onToggleApprove,
 }: {
   testimonial: Testimonial;
-  featured: boolean;
+  approved: boolean;
   onDelete: () => void;
-  onToggleFeature: () => void;
+  onToggleApprove: () => void;
 }) => {
   const [expanded, setExpanded] = useState(false);
   const isLong = testimonial.text.length > 140;
@@ -110,14 +101,14 @@ const TestimonialCard = ({
         "relative overflow-hidden transition-all duration-300 group",
         testimonial.rating === 5 &&
           "ring-2 ring-amber-300/60 dark:ring-amber-500/40",
-        featured && "ring-2 ring-indigo-400/70 dark:ring-indigo-500/50"
+        approved && "ring-2 ring-indigo-400/70 dark:ring-indigo-500/50"
       )}
     >
       {/* top accent bar for 5-star */}
       {testimonial.rating === 5 && (
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400" />
       )}
-      {featured && (
+      {approved && (
         <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500 via-violet-400 to-indigo-500" />
       )}
 
@@ -139,12 +130,12 @@ const TestimonialCard = ({
                 <p className="text-sm font-semibold leading-tight truncate">
                   {testimonial.name}
                 </p>
-                {featured && (
+                {approved && (
                   <Badge className="text-[10px] h-4 px-1.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border-0">
-                    Featured
+                    Approved
                   </Badge>
                 )}
-                {testimonial.rating === 5 && !featured && (
+                {testimonial.rating === 5 && !approved && (
                   <Badge className="text-[10px] h-4 px-1.5 bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-0">
                     <Sparkles className="h-2.5 w-2.5 mr-0.5" />
                     Top
@@ -153,6 +144,7 @@ const TestimonialCard = ({
               </div>
               <p className="text-xs text-muted-foreground truncate">
                 {testimonial.role}
+                {testimonial.county ? ` · ${testimonial.county}` : ""}
               </p>
             </div>
           </div>
@@ -163,10 +155,10 @@ const TestimonialCard = ({
               variant="ghost"
               size="icon"
               className="h-7 w-7 text-muted-foreground hover:text-indigo-600"
-              onClick={onToggleFeature}
-              title={featured ? "Unfeature" : "Feature"}
+              onClick={onToggleApprove}
+              title={approved ? "Unapprove" : "Approve"}
             >
-              {featured ? (
+              {approved ? (
                 <PinOff className="h-3.5 w-3.5" />
               ) : (
                 <Pin className="h-3.5 w-3.5" />
@@ -198,143 +190,14 @@ const TestimonialCard = ({
             className="mt-1 flex items-center gap-0.5 text-xs text-primary font-medium hover:underline"
           >
             {expanded ? (
-              <>
-                Show less <ChevronUp className="h-3 w-3" />
-              </>
+              <>Show less <ChevronUp className="h-3 w-3" /></>
             ) : (
-              <>
-                Read more <ChevronDown className="h-3 w-3" />
-              </>
+              <>Read more <ChevronDown className="h-3 w-3" /></>
             )}
           </button>
         )}
       </CardContent>
     </Card>
-  );
-};
-
-// ─── AddTestimonialModal ──────────────────────────────────────────────────────
-
-const MAX_TEXT = 500;
-
-const AddTestimonialModal = ({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) => {
-  const [name, setName] = useState("");
-  const [role, setRole] = useState("");
-  const [rating, setRating] = useState(5);
-  const [text, setText] = useState("");
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  const reset = () => {
-    setName(""); setRole(""); setRating(5); setText(""); setErrors({});
-  };
-
-  const handleClose = () => { reset(); onClose(); };
-
-  const validate = () => {
-    const e: Record<string, string> = {};
-    if (!name.trim()) e.name = "Name is required";
-    if (!role.trim()) e.role = "Role is required";
-    if (!text.trim()) e.text = "Testimonial text is required";
-    if (text.length > MAX_TEXT) e.text = `Max ${MAX_TEXT} characters`;
-    return e;
-  };
-
-  const handleSubmit = () => {
-    const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
-    testimonialStore.add({ name: name.trim(), role: role.trim(), rating, text: text.trim() });
-    handleClose();
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-indigo-500" />
-            Add Testimonial
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 py-1">
-          {/* Name */}
-          <div className="space-y-1.5">
-            <Label htmlFor="t-name" className="text-sm">Name</Label>
-            <Input
-              id="t-name"
-              placeholder="e.g. Dr. Amina Osei"
-              value={name}
-              onChange={(e) => { setName(e.target.value); setErrors((p) => ({ ...p, name: "" })); }}
-              className={cn(errors.name && "border-destructive")}
-            />
-            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
-          </div>
-
-          {/* Role */}
-          <div className="space-y-1.5">
-            <Label htmlFor="t-role" className="text-sm">Role</Label>
-            <Input
-              id="t-role"
-              placeholder="e.g. Senior Physician, KNH"
-              value={role}
-              onChange={(e) => { setRole(e.target.value); setErrors((p) => ({ ...p, role: "" })); }}
-              className={cn(errors.role && "border-destructive")}
-            />
-            {errors.role && <p className="text-xs text-destructive">{errors.role}</p>}
-          </div>
-
-          {/* Rating */}
-          <div className="space-y-1.5">
-            <Label className="text-sm">Rating</Label>
-            <RatingStars
-              rating={rating}
-              interactive
-              onSelect={setRating}
-              size="md"
-            />
-          </div>
-
-          {/* Text */}
-          <div className="space-y-1.5">
-            <Label htmlFor="t-text" className="text-sm">Testimonial</Label>
-            <Textarea
-              id="t-text"
-              placeholder="Share your experience…"
-              rows={4}
-              value={text}
-              onChange={(e) => { setText(e.target.value); setErrors((p) => ({ ...p, text: "" })); }}
-              className={cn("resize-none", errors.text && "border-destructive")}
-            />
-            <div className="flex items-center justify-between">
-              {errors.text
-                ? <p className="text-xs text-destructive">{errors.text}</p>
-                : <span />}
-              <span
-                className={cn(
-                  "text-xs tabular-nums",
-                  text.length > MAX_TEXT ? "text-destructive" : "text-muted-foreground"
-                )}
-              >
-                {text.length}/{MAX_TEXT}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter className="gap-2">
-          <Button variant="ghost" onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSubmit}>
-            <Plus className="h-4 w-4 mr-1.5" /> Add Testimonial
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 };
 
@@ -399,10 +262,9 @@ const EmptyState = () => (
     <div>
       <p className="text-base font-semibold">No testimonials yet</p>
       <p className="text-sm text-muted-foreground mt-1">
-        Testimonials added by users will appear here.
+        Testimonials submitted by learners will appear here for approval.
       </p>
     </div>
-    
   </div>
 );
 
@@ -412,31 +274,37 @@ const TestimonialsPage = () => {
   const [testimonials, setTestimonials] = useState<Testimonial[]>(
     testimonialStore.getAll()
   );
-  const [featured, setFeatured] = useState<Set<string>>(new Set());
-  const [showModal, setShowModal] = useState(false);
   const [search, setSearch] = useState("");
   const [ratingFilter, setRatingFilter] = useState("all");
   const [sort, setSort] = useState<SortKey>("newest");
 
-  // Reactive subscription
+  // Load from backend & subscribe reactively
   useEffect(() => {
+    testimonialStore.fetchAll();
     const unsubscribe = testimonialStore.subscribe(() => {
       setTestimonials(testimonialStore.getAll());
     });
     return unsubscribe;
   }, []);
 
-  const handleDelete = useCallback((id: string) => {
-    testimonialStore.remove(id);
-    setFeatured((prev) => { const n = new Set(prev); n.delete(id); return n; });
+  const handleDelete = useCallback(async (id: string) => {
+    try {
+      await testimonialStore.remove(id);
+      toast.success("Testimonial deleted");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to delete";
+      toast.error(message);
+    }
   }, []);
 
-  const toggleFeature = useCallback((id: string) => {
-    setFeatured((prev) => {
-      const n = new Set(prev);
-      n.has(id) ? n.delete(id) : n.add(id);
-      return n;
-    });
+  const handleToggleApprove = useCallback(async (id: string, currentlyApproved: boolean) => {
+    try {
+      await testimonialStore.setApproved(id, !currentlyApproved);
+      toast.success(currentlyApproved ? "Testimonial unapproved" : "Testimonial approved — now visible on landing page");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to update";
+      toast.error(message);
+    }
   }, []);
 
   // Filter + sort
@@ -449,8 +317,7 @@ const TestimonialsPage = () => {
     })
     .sort((a, b) => {
       if (sort === "highest") return b.rating - a.rating;
-      // newest: higher numeric id = newer
-      return Number(b.id.replace("t", "")) - Number(a.id.replace("t", ""));
+      return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
     });
 
   const totalByRating = [5, 4, 3, 2, 1].map((r) => ({
@@ -461,6 +328,7 @@ const TestimonialsPage = () => {
     testimonials.length > 0
       ? (testimonials.reduce((s, t) => s + t.rating, 0) / testimonials.length).toFixed(1)
       : "—";
+  const approvedCount = testimonials.filter((t) => t.isApproved).length;
 
   return (
     <div className="space-y-6 pb-10">
@@ -472,25 +340,20 @@ const TestimonialsPage = () => {
             Testimonials Management
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            View and manage user feedback
+            Approve learner reviews to display them on the landing page
           </p>
         </div>
-        {/* <Button onClick={() => setShowModal(true)}>
-          <Plus className="h-4 w-4 mr-1.5" /> Add Testimonial
-        </Button> */}
       </div>
 
       {/* ── Summary stats ── */}
       {testimonials.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {/* Total */}
           <Card>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Total</p>
               <p className="text-2xl font-bold tabular-nums">{testimonials.length}</p>
             </CardContent>
           </Card>
-          {/* Avg rating */}
           <Card>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Avg Rating</p>
@@ -500,7 +363,6 @@ const TestimonialsPage = () => {
               </div>
             </CardContent>
           </Card>
-          {/* 5-star */}
           <Card>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">5-Star</p>
@@ -509,12 +371,11 @@ const TestimonialsPage = () => {
               </p>
             </CardContent>
           </Card>
-          {/* Featured */}
           <Card>
             <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Featured</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Approved</p>
               <p className="text-2xl font-bold tabular-nums text-indigo-500">
-                {featured.size}
+                {approvedCount}
               </p>
             </CardContent>
           </Card>
@@ -559,19 +420,13 @@ const TestimonialsPage = () => {
             <TestimonialCard
               key={t.id}
               testimonial={t}
-              featured={featured.has(t.id)}
+              approved={t.isApproved ?? false}
               onDelete={() => handleDelete(t.id)}
-              onToggleFeature={() => toggleFeature(t.id)}
+              onToggleApprove={() => handleToggleApprove(t.id, t.isApproved ?? false)}
             />
           ))}
         </div>
       )}
-
-      {/* ── Modal ── */}
-      <AddTestimonialModal
-        open={showModal}
-        onClose={() => setShowModal(false)}
-      />
     </div>
   );
 };

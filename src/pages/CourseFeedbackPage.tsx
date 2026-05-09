@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import { feedbackStore, CourseFeedback } from "@/data/feedbackStore";
 import { courseStore } from "@/data/courseStore";
 import { Card, CardContent } from "@/components/ui/card";
@@ -318,15 +318,26 @@ const CourseFeedbackPage = () => {
     courseStore.getAll,
   );
 
+  // Load data from backend on mount
+  useEffect(() => {
+    feedbackStore.fetchAll();
+    courseStore.fetchAll();
+  }, []);
+
   // Filters
   const [search, setSearch] = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
   const [sort, setSort] = useState<SortKey>("newest");
 
-  const handleDelete = (id: string) => {
-    feedbackStore.remove(id);
-    toast.success("Feedback deleted");
+  const handleDelete = async (id: string) => {
+    try {
+      await feedbackStore.remove(id);
+      toast.success("Feedback deleted");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to delete feedback";
+      toast.error(message);
+    }
   };
 
   // Summary stats

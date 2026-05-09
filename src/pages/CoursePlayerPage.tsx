@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { courseStore } from "@/data/courseStore";
 import { enrollmentStore } from "@/data/enrollmentStore";
@@ -11,25 +11,57 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import StarRating from "@/components/StarRating";
-import { CheckCircle, XCircle, BookOpen } from "lucide-react";
+import { CheckCircle, XCircle, BookOpen, Loader2 } from "lucide-react";
 
 const CoursePlayerPage = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const userId = user?.nationalId ?? "";
+  const userId = user?.id ?? "";
 
-  const course = courseStore.getById(courseId ?? "");
+  // Fetch courses & enrollments from API on mount
+  useEffect(() => {
+    courseStore.fetchAll();
+    if (userId) enrollmentStore.fetchMyEnrollments(userId);
+  }, [userId]);
+
+  const courses = useSyncExternalStore(courseStore.subscribe, courseStore.getAll);
+  const isLoading = useSyncExternalStore(courseStore.subscribe, courseStore.getIsLoading);
+  const course = courses.find((c) => c.id === courseId) ?? null;
+
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const [videoProgress, setVideoProgress] = useState(0);
-  const [videoComplete, setVideoComplete] = useState(false);
+  // ── Local state ──────────────────────────────────────────────────────────
+  // Initialise from enrollment DB state so "Review" shows correct status
+  const enrollment = course && userId
+    ? enrollmentStore.getEnrollment(userId, course.id)
+    : null;
+  const alreadyComplete = enrollment?.status === "complete";
+
+  const [videoComplete, setVideoComplete] = useState(alreadyComplete);
+  const [videoProgress, setVideoProgress] = useState(
+    alreadyComplete ? 100 : 0
+  );
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number[]>>({});
-  const [quizSubmitted, setQuizSubmitted] = useState(false);
-  const [quizScore, setQuizScore] = useState(0);
+  const [quizSubmitted, setQuizSubmitted] = useState(alreadyComplete);
+  // Store the quiz score — default to enrollment progress if already complete
+  const [quizScore, setQuizScore] = useState(
+    alreadyComplete ? (enrollment?.progress ?? 0) : 0
+  );
   const [rating, setRating] = useState(0);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+
+  // ── Guard: loading ──────────────────────────────────────────────────────
+  if (isLoading && !course) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-24 text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="text-sm">Loading course…</p>
+      </div>
+    );
+  }
 
   // ── Guard: course must exist ─────────────────────────────────────────────
   if (!course) {
@@ -74,19 +106,33 @@ const CoursePlayerPage = () => {
         ? 50
         : videoProgress / 2;
 
+  // ── Video handlers ───────────────────────────────────────────────────────
   const handleTimeUpdate = () => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || !videoRef.current.duration) return;
     const pct =
       (videoRef.current.currentTime / videoRef.current.duration) * 100;
     setVideoProgress(pct);
-    if (pct > 90) setVideoComplete(true);
-
-    // Persist progress to enrollment store
-    const currentOverall =
-      pct > 90 && quizSubmitted ? 100 : pct > 90 ? 50 : pct / 2;
-    if (userId) enrollmentStore.updateProgress(userId, course.id, currentOverall);
+    // Only update DB every ~5% to avoid flooding
+    if (Math.round(pct) % 5 === 0 && userId) {
+      const overall = quizSubmitted ? Math.max(50, pct / 2) : pct / 2;
+      void enrollmentStore.updateProgress(userId, course.id, overall);
+    }
   };
 
+  const handleVideoEnded = () => {
+    // Video is complete ONLY when it actually ends
+    setVideoComplete(true);
+    setVideoProgress(100);
+    if (userId) {
+      void enrollmentStore.updateProgress(
+        userId,
+        course.id,
+        quizSubmitted ? 100 : 50,
+      );
+    }
+  };
+
+  // ── Quiz handler ─────────────────────────────────────────────────────────
   const handleQuizSubmit = () => {
     let correct = 0;
     course.quiz.forEach((q) => {
@@ -105,30 +151,37 @@ const CoursePlayerPage = () => {
     setQuizSubmitted(true);
     toast.success(`Quiz completed! Score: ${score}%`);
 
-    // Mark as complete in enrollment store if video was already done
     if (userId && videoComplete) {
-      enrollmentStore.updateProgress(userId, course.id, 100);
+      void enrollmentStore.updateProgress(userId, course.id, 100);
     } else if (userId) {
-      enrollmentStore.updateProgress(userId, course.id, 50);
+      void enrollmentStore.updateProgress(userId, course.id, 50);
     }
   };
 
-  const handleFeedback = () => {
+  // ── Feedback handler ─────────────────────────────────────────────────────
+  const handleFeedback = async () => {
     if (rating === 0) {
       toast.error("Please select a rating");
       return;
     }
-    // Persist to feedbackStore so admin can review it
-    feedbackStore.submit({
-      courseId: course.id,
-      courseName: course.title,
-      userId: userId,
-      userName: user?.name ?? "Learner",
-      rating,
-      comment: feedbackText.trim(),
-    });
-    setFeedbackSubmitted(true);
-    toast.success("Thank you for your feedback!");
+    setFeedbackSubmitting(true);
+    try {
+      await feedbackStore.submit({
+        userId,
+        courseId: course.id,
+        courseName: course.title,
+        userName: user?.name ?? "Learner",
+        rating,
+        comment: feedbackText.trim(),
+      });
+      setFeedbackSubmitted(true);
+      toast.success("Thank you for your feedback!");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to submit feedback";
+      toast.error(message);
+    } finally {
+      setFeedbackSubmitting(false);
+    }
   };
 
   return (
@@ -141,7 +194,7 @@ const CoursePlayerPage = () => {
           </p>
         </div>
         <Badge variant={allDone ? "default" : "secondary"}>
-          {allDone ? "Complete" : "Incomplete"}
+          {allDone ? "Complete" : "In Progress"}
         </Badge>
       </div>
 
@@ -182,16 +235,7 @@ const CoursePlayerPage = () => {
             controls
             className="w-full rounded-lg bg-foreground/5"
             onTimeUpdate={handleTimeUpdate}
-            onEnded={() => {
-              setVideoComplete(true);
-              if (userId) {
-                enrollmentStore.updateProgress(
-                  userId,
-                  course.id,
-                  quizSubmitted ? 100 : 50,
-                );
-              }
-            }}
+            onEnded={handleVideoEnded}
           />
           {videoComplete && (
             <div className="mt-2 flex items-center gap-1 text-success text-sm">
@@ -204,7 +248,14 @@ const CoursePlayerPage = () => {
       {/* Quiz */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Quiz</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">Quiz</CardTitle>
+            {quizSubmitted && (
+              <span className="text-sm font-semibold text-primary">
+                Score: {quizScore}%
+              </span>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {course.quiz.map((q, qi) => (
@@ -282,12 +333,12 @@ const CoursePlayerPage = () => {
               Submit Quiz
             </Button>
           ) : (
-            <div className="p-4 rounded-lg bg-muted text-center">
+            <div className="p-4 rounded-lg bg-muted text-center space-y-1">
               <p className="text-lg font-bold">Score: {quizScore}%</p>
               <p className="text-sm text-muted-foreground">
                 {quizScore >= 70
-                  ? "Well done!"
-                  : "Keep studying and try again."}
+                  ? "Well done! Course complete."
+                  : "Keep studying — you can retake the quiz."}
               </p>
             </div>
           )}
@@ -312,7 +363,9 @@ const CoursePlayerPage = () => {
                 onChange={(e) => setFeedbackText(e.target.value)}
                 rows={3}
               />
-              <Button onClick={handleFeedback}>Submit Feedback</Button>
+              <Button onClick={handleFeedback} disabled={feedbackSubmitting}>
+                {feedbackSubmitting ? "Submitting…" : "Submit Feedback"}
+              </Button>
             </>
           ) : (
             <div className="text-center py-4">

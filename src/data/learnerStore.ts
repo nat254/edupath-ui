@@ -1,4 +1,4 @@
-import { mockLearners } from "./mockData";
+const BASE = "http://localhost:5000";
 
 export interface Learner {
   id: string;
@@ -11,7 +11,8 @@ export interface Learner {
   coursesInProgress: number;
 }
 
-let learnerList: Learner[] = [...mockLearners];
+let learnerList: Learner[] = [];
+let isLoading = false;
 let listeners: (() => void)[] = [];
 
 function emit() {
@@ -25,24 +26,34 @@ export const learnerStore = {
       listeners = listeners.filter((l) => l !== listener);
     };
   },
-  getAll() {
+
+  getAll(): Learner[] {
     return learnerList;
   },
-  getById(id: string) {
+
+  getIsLoading(): boolean {
+    return isLoading;
+  },
+
+  getById(id: string): Learner | null {
     return learnerList.find((l) => l.id === id) ?? null;
   },
-  add(learner: Omit<Learner, "id">) {
-    const newLearner: Learner = { ...learner, id: crypto.randomUUID() };
-    learnerList = [...learnerList, newLearner];
+
+  /** Fetch all learners with real enrollment stats from the backend */
+  async fetchAll(): Promise<void> {
+    if (isLoading) return;
+    isLoading = true;
     emit();
-    return newLearner;
-  },
-  update(id: string, data: Partial<Omit<Learner, "id">>) {
-    learnerList = learnerList.map((l) => (l.id === id ? { ...l, ...data } : l));
-    emit();
-  },
-  remove(id: string) {
-    learnerList = learnerList.filter((l) => l.id !== id);
-    emit();
+    try {
+      const res = await fetch(`${BASE}/learners`);
+      if (!res.ok) throw new Error(await res.text());
+      const data: Learner[] = await res.json();
+      learnerList = data;
+    } catch (err) {
+      console.error("learnerStore.fetchAll error:", err);
+    } finally {
+      isLoading = false;
+      emit();
+    }
   },
 };

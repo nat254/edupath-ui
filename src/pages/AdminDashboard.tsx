@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback, useSyncExternalStore, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useSyncExternalStore, useRef } from "react";
 import { courseStore } from "@/data/courseStore";
 import { learnerStore } from "@/data/learnerStore";
+import { analyticsStore } from "@/data/analyticsStore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,6 @@ import {
   Clock, UserCheck, FileText, ArrowUpRight, ArrowDownRight,
   Search, Target, Percent, GraduationCap, AlertTriangle, Loader2,
 } from "lucide-react";
-
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, AreaChart, Area, LineChart, Line,
@@ -29,38 +29,6 @@ import html2canvas from "html2canvas";
 
 const CHART_COLORS = ["#6366f1","#10b981","#f59e0b","#3b82f6","#ec4899","#8b5cf6","#14b8a6","#f97316","#06b6d4","#84cc16"];
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-
-// ─── Generators ───────────────────────────────────────────────────────────────
-
-const generateMonthlyTrend = () => {
-  const data: { month: string; date: Date; enrollments: number; completions: number }[] = [];
-  for (let y = 2024; y <= 2026; y++) {
-    const months = y === 2026 ? 4 : 12;
-    for (let m = 0; m < months; m++) {
-      data.push({
-        month: `${MONTHS[m]} ${y}`,
-        date: new Date(y, m, 15),
-        enrollments: Math.floor(Math.random() * 80) + 10,
-        completions: Math.floor(Math.random() * 50) + 5,
-      });
-    }
-  }
-  return data;
-};
-
-const generateDailyTrend = () => {
-  const now = new Date();
-  return Array.from({ length: 91 }, (_, i) => {
-    const d = subDays(now, 90 - i);
-    return { day: format(d, "MMM dd"), date: d, enrollments: Math.floor(Math.random() * 15) + 1 };
-  });
-};
-
-const hashStr = (s: string) => {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  return Math.abs(h);
-};
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -101,7 +69,6 @@ const EmptyState = ({ message = "No data for current filters" }: { message?: str
   </div>
 );
 
-// Section divider label
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60 mb-3">{children}</p>
 );
@@ -164,8 +131,17 @@ const AdminDashboard = () => {
 
   const courses  = useSyncExternalStore(courseStore.subscribe, courseStore.getAll);
   const learners = useSyncExternalStore(learnerStore.subscribe, learnerStore.getAll);
+  const isLoading = useSyncExternalStore(learnerStore.subscribe, learnerStore.getIsLoading);
+  const analytics    = useSyncExternalStore(analyticsStore.subscribe, analyticsStore.getData);
+const analyticsLoading = useSyncExternalStore(analyticsStore.subscribe, analyticsStore.getIsLoading);
   const dashboardRef = useRef<HTMLDivElement>(null);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
+
+  useEffect(() => {
+    learnerStore.fetchAll();
+    courseStore.fetchAll();
+    analyticsStore.fetchAll();
+  }, []);
 
   const downloadPDF = useCallback(async () => {
     const el = dashboardRef.current;
@@ -196,16 +172,16 @@ const AdminDashboard = () => {
   }, [isPdfLoading]);
 
   // ── Filters ──────────────────────────────────────────────────────────────
-  const [filtersOpen,   setFiltersOpen  ] = useState(false);
-  const [filterOrg,     setFilterOrg    ] = useState("all");
-  const [filterCounty,  setFilterCounty ] = useState("all");
-  const [filterCategory,setFilterCategory] = useState("all");
-  const [searchLearner, setSearchLearner] = useState("");
-  const [dateFrom,      setDateFrom     ] = useState<Date | undefined>();
-  const [dateTo,        setDateTo       ] = useState<Date | undefined>();
-  const [trendDateFrom, setTrendDateFrom] = useState<Date | undefined>();
-  const [trendDateTo,   setTrendDateTo  ] = useState<Date | undefined>();
-  const [trendPeriod,   setTrendPeriod  ] = useState<"week" | "month" | "year">("month");
+  const [filtersOpen,    setFiltersOpen   ] = useState(false);
+  const [filterOrg,      setFilterOrg     ] = useState("all");
+  const [filterCounty,   setFilterCounty  ] = useState("all");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [searchLearner,  setSearchLearner ] = useState("");
+  const [dateFrom,       setDateFrom      ] = useState<Date | undefined>();
+  const [dateTo,         setDateTo        ] = useState<Date | undefined>();
+  const [trendDateFrom,  setTrendDateFrom ] = useState<Date | undefined>();
+  const [trendDateTo,    setTrendDateTo   ] = useState<Date | undefined>();
+  const [trendPeriod,    setTrendPeriod   ] = useState<"week" | "month" | "year">("month");
 
   const uniqueOrgs       = useMemo(() => [...new Set(learners.map(l => l.organization.split(" - ")[0]))], [learners]);
   const uniqueCounties   = useMemo(() => [...new Set(learners.map(l => l.county).filter(Boolean))], [learners]);
@@ -221,7 +197,7 @@ const AdminDashboard = () => {
     filterOrg !== "all" || filterCounty !== "all" || filterCategory !== "all" ||
     !!searchLearner || !!dateFrom || !!dateTo || !!trendDateFrom || !!trendDateTo;
 
-  // ── Filtered data — every chart derives from these ────────────────────────
+  // ── Filtered data ─────────────────────────────────────────────────────────
   const filteredLearners = useMemo(() => {
     const q = searchLearner.toLowerCase();
     return learners.filter(l => {
@@ -236,42 +212,34 @@ const AdminDashboard = () => {
     filterCategory === "all" ? courses : courses.filter(c => c.category === filterCategory),
     [courses, filterCategory]);
 
-  // ── Scaling ratios ────────────────────────────────────────────────────────
-  const learnerRatio = useMemo(() => filteredLearners.length / (learners.length || 1), [filteredLearners.length, learners.length]);
-
   // ── Time-series ───────────────────────────────────────────────────────────
-  const monthlyTrend = useMemo(() => generateMonthlyTrend(), []);
-  const dailyTrend   = useMemo(() => generateDailyTrend(),   []);
+const monthlyTrend = analytics.trend;
+const dailyTrend   = analytics.daily;
 
   const filteredTrend = useMemo(() => {
     let data = monthlyTrend;
     if (dateFrom || dateTo) {
       data = data.filter(d => {
-        if (dateFrom && d.date < startOfDay(dateFrom)) return false;
-        if (dateTo   && d.date > endOfDay(dateTo))     return false;
+        const date = new Date(d.date);
+        if (dateFrom && date < startOfDay(dateFrom)) return false;
+        if (dateTo   && date > endOfDay(dateTo))     return false;
         return true;
       });
     }
-    return data.map(d => ({
-      ...d,
-      enrollments: Math.max(1, Math.round(d.enrollments * learnerRatio)),
-      completions:  Math.max(1, Math.round(d.completions  * learnerRatio)),
-    }));
-  }, [monthlyTrend, dateFrom, dateTo, learnerRatio]);
+    return data;
+  }, [monthlyTrend, dateFrom, dateTo]);
 
   const enrollmentByPeriod = useMemo(() => {
-    const scale = (v: number) => Math.max(1, Math.round(v * learnerRatio));
-
     let base =
-      trendPeriod === "week"  ? dailyTrend.slice(-7) :
-      trendPeriod === "year"  ? [] :   // handled below
+      trendPeriod === "week" ? dailyTrend.slice(-7) :
+      trendPeriod === "year" ? [] :
       dailyTrend.slice(-30);
 
-    // Apply trendDateFrom / trendDateTo filter
     if (trendPeriod !== "year" && (trendDateFrom || trendDateTo)) {
       base = base.filter(d => {
-        if (trendDateFrom && d.date < startOfDay(trendDateFrom)) return false;
-        if (trendDateTo   && d.date > endOfDay(trendDateTo))     return false;
+        const date = new Date(d.date);
+        if (trendDateFrom && date < startOfDay(trendDateFrom)) return false;
+        if (trendDateTo   && date > endOfDay(trendDateTo))     return false;
         return true;
       });
     }
@@ -281,17 +249,18 @@ const AdminDashboard = () => {
       let src = monthlyTrend;
       if (trendDateFrom || trendDateTo) {
         src = src.filter(d => {
-          if (trendDateFrom && d.date < startOfDay(trendDateFrom)) return false;
-          if (trendDateTo   && d.date > endOfDay(trendDateTo))     return false;
+          const date = new Date(d.date);
+          if (trendDateFrom && date < startOfDay(trendDateFrom)) return false;
+          if (trendDateTo   && date > endOfDay(trendDateTo))     return false;
           return true;
         });
       }
       src.forEach(d => { const yr = d.month.split(" ")[1]; map[yr] = (map[yr] || 0) + d.enrollments; });
-      return Object.entries(map).map(([day, enrollments]) => ({ day, enrollments: scale(enrollments) }));
+      return Object.entries(map).map(([day, enrollments]) => ({ day, enrollments }));
     }
 
-    return base.map(d => ({ day: d.day, enrollments: scale(d.enrollments) }));
-  }, [trendPeriod, trendDateFrom, trendDateTo, dailyTrend, monthlyTrend, learnerRatio]);
+    return base.map(d => ({ day: d.day, enrollments: d.enrollments }));
+  }, [trendPeriod, trendDateFrom, trendDateTo, dailyTrend, monthlyTrend]);
 
   // ── Core KPIs ─────────────────────────────────────────────────────────────
   const totalCompleted  = filteredLearners.reduce((s, l) => s + l.coursesCompleted,  0);
@@ -303,26 +272,26 @@ const AdminDashboard = () => {
   const atRisk          = filteredLearners.filter(l => l.coursesCompleted === 0 && l.coursesInProgress > 0).length;
   const avgCourses      = filteredLearners.length > 0 ? (totalEnrolled / filteredLearners.length).toFixed(1) : "0";
 
-  const scaledDaily  = useMemo(() => dailyTrend.map(d => ({ ...d, enrollments: Math.max(1, Math.round(d.enrollments * learnerRatio)) })), [dailyTrend, learnerRatio]);
-  const recent7      = scaledDaily.slice(-7).reduce((s, d)    => s + d.enrollments, 0);
-  const prev7        = scaledDaily.slice(-14, -7).reduce((s, d) => s + d.enrollments, 0);
-  const recent30     = scaledDaily.slice(-30).reduce((s, d)   => s + d.enrollments, 0);
-  const wowChange    = prev7 > 0 ? Math.round(((recent7 - prev7) / prev7) * 100) : 10;
+  const scaledDaily = dailyTrend;
+  const recent7     = scaledDaily.slice(-7).reduce((s, d)    => s + d.enrollments, 0);
+  const prev7       = scaledDaily.slice(-14, -7).reduce((s, d) => s + d.enrollments, 0);
+  const recent30    = scaledDaily.slice(-30).reduce((s, d)   => s + d.enrollments, 0);
+  const wowChange   = prev7 > 0 ? Math.round(((recent7 - prev7) / prev7) * 100) : 10;
 
   const kpis = [
-    { label: "Total Learners",       value: filteredLearners.length,  icon: Users,         trend: 12,                         color: "text-indigo-600",  bg: "bg-indigo-50 dark:bg-indigo-950/40",   spark: filteredTrend.slice(-8).map(d => d.enrollments) },
-    { label: "Active",               value: activeLearners,           icon: UserCheck,     trend: 8,                          color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-950/40", spark: filteredTrend.slice(-8).map(d => Math.round(d.enrollments * 0.6)) },
-    { label: "Completions",          value: totalCompleted,           icon: Award,         trend: 15,                         color: "text-blue-600",    bg: "bg-blue-50 dark:bg-blue-950/40",       spark: filteredTrend.slice(-8).map(d => d.completions) },
-    { label: "In Progress",          value: totalInProgress,          icon: Clock,         trend: totalInProgress > 5 ? 6:-2, color: "text-amber-600",   bg: "bg-amber-50 dark:bg-amber-950/40",    spark: filteredTrend.slice(-8).map(d => Math.round(d.completions * 0.5)) },
-    { label: "Completion Rate",      value: `${completionRate}%`,     icon: Percent,       trend: completionRate > 50 ? 4:-8, color: "text-teal-600",    bg: "bg-teal-50 dark:bg-teal-950/40",      spark: Array.from({length:8},(_,i) => 40 + i*5) },
-    { label: "Not Started",          value: notStarted,               icon: AlertTriangle, trend: notStarted > 3 ? -5 : 2,   color: "text-rose-600",    bg: "bg-rose-50 dark:bg-rose-950/40",      spark: Array.from({length:8},(_,i) => 8 - i) },
-    { label: "Courses",              value: filteredCourses.length,   icon: BookOpen,      trend: 5,                          color: "text-violet-600",  bg: "bg-violet-50 dark:bg-violet-950/40",  spark: [3,3,4,4,4,5,5,filteredCourses.length] },
-    { label: "Avg Courses / Learner",value: avgCourses,               icon: GraduationCap, trend: 3,                          color: "text-cyan-600",    bg: "bg-cyan-50 dark:bg-cyan-950/40",      spark: Array.from({length:8},(_,i) => 1.5 + i * 0.2) },
-    { label: "At Risk",              value: atRisk,                   icon: Target,        trend: atRisk > 2 ? -10 : 5,       color: "text-orange-600",  bg: "bg-orange-50 dark:bg-orange-950/40",  spark: Array.from({length:8},(_,i) => 4 - i * 0.3) },
-    { label: "Enrolled (7d)",        value: recent7,                  icon: Activity,      trend: wowChange,                  color: "text-pink-600",    bg: "bg-pink-50 dark:bg-pink-950/40",      spark: dailyTrend.slice(-7).map(d => d.enrollments), sub: `${recent30} in 30 days` },
+    { label: "Total Learners",        value: filteredLearners.length, icon: Users,         trend: 12,                         color: "text-indigo-600",  bg: "bg-indigo-50 dark:bg-indigo-950/40",   spark: filteredTrend.slice(-8).map(d => d.enrollments) },
+    { label: "Active",                value: activeLearners,          icon: UserCheck,     trend: 8,                          color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-950/40", spark: filteredTrend.slice(-8).map(d => Math.round(d.enrollments * 0.6)) },
+    { label: "Completions",           value: totalCompleted,          icon: Award,         trend: 15,                         color: "text-blue-600",    bg: "bg-blue-50 dark:bg-blue-950/40",       spark: filteredTrend.slice(-8).map(d => d.completions) },
+    { label: "In Progress",           value: totalInProgress,         icon: Clock,         trend: totalInProgress > 5 ? 6:-2, color: "text-amber-600",   bg: "bg-amber-50 dark:bg-amber-950/40",    spark: filteredTrend.slice(-8).map(d => Math.round(d.completions * 0.5)) },
+    { label: "Completion Rate",       value: `${completionRate}%`,    icon: Percent,       trend: completionRate > 50 ? 4:-8, color: "text-teal-600",    bg: "bg-teal-50 dark:bg-teal-950/40",      spark: Array.from({length:8},(_,i) => 40 + i*5) },
+    { label: "Not Started",           value: notStarted,              icon: AlertTriangle, trend: notStarted > 3 ? -5 : 2,   color: "text-rose-600",    bg: "bg-rose-50 dark:bg-rose-950/40",      spark: Array.from({length:8},(_,i) => 8 - i) },
+    { label: "Courses",               value: filteredCourses.length,  icon: BookOpen,      trend: 5,                          color: "text-violet-600",  bg: "bg-violet-50 dark:bg-violet-950/40",  spark: [3,3,4,4,4,5,5,filteredCourses.length] },
+    { label: "Avg Courses / Learner", value: avgCourses,              icon: GraduationCap, trend: 3,                          color: "text-cyan-600",    bg: "bg-cyan-50 dark:bg-cyan-950/40",      spark: Array.from({length:8},(_,i) => 1.5 + i * 0.2) },
+    { label: "At Risk",               value: atRisk,                  icon: Target,        trend: atRisk > 2 ? -10 : 5,       color: "text-orange-600",  bg: "bg-orange-50 dark:bg-orange-950/40",  spark: Array.from({length:8},(_,i) => 4 - i * 0.3) },
+    { label: "Enrolled (7d)",         value: recent7,                 icon: Activity,      trend: wowChange,                  color: "text-pink-600",    bg: "bg-pink-50 dark:bg-pink-950/40",      spark: dailyTrend.slice(-7).map(d => d.enrollments), sub: `${recent30} in 30 days` },
   ];
 
-  // ── Chart data — all reactive to filteredLearners + filteredCourses ───────
+  // ── Chart data ────────────────────────────────────────────────────────────
 
   const categoryData = useMemo(() => {
     const map: Record<string, number> = {};
@@ -330,59 +299,25 @@ const AdminDashboard = () => {
     return Object.entries(map).map(([name, value]) => ({ name, value }));
   }, [filteredCourses]);
 
-  const orgData = useMemo(() => {
-    const map: Record<string, { completed: number; inProgress: number }> = {};
-    filteredLearners.forEach(l => {
-      const org = l.organization.split(" - ")[0];
-      if (!map[org]) map[org] = { completed: 0, inProgress: 0 };
-      map[org].completed  += l.coursesCompleted;
-      map[org].inProgress += l.coursesInProgress;
-    });
-    return Object.entries(map)
-      .map(([name, v]) => ({
-        name, ...v,
-        total: v.completed + v.inProgress,
-        rate: v.completed + v.inProgress > 0 ? Math.round(v.completed / (v.completed + v.inProgress) * 100) : 0,
-      }))
-      .sort((a, b) => b.total - a.total);
-  }, [filteredLearners]);
+  const orgData = analytics.orgProgress;
+  const countyData = analytics.county;
+  const courseCompletionData = analytics.courseCompletion;
+  const topCourses = analytics.topCourses ;
 
-  const countyData = useMemo(() => {
-    const map: Record<string, number> = {};
-    filteredLearners.forEach(l => { if (l.county) map[l.county] = (map[l.county] || 0) + 1; });
-    return Object.entries(map).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
-  }, [filteredLearners]);
+  const statusDistribution = [
+    { name: "Completed",   value: analytics.status.completed, color: "#10b981" },
+    { name: "In Progress", value: analytics.status.inProgress,color: "#6366f1" },
+    { name: "Not Started", value: analytics.status.notStarted, color: "#f59e0b" },
+  ].filter(d => d.value > 0);
 
-  const courseCompletionData = useMemo(() => {
-    const total = filteredLearners.length || 1;
-    return filteredCourses.map(c => {
-      const seed = hashStr(c.id + total);
-      const rate = Math.min(100, Math.round(((seed % 80) + 10) * learnerRatio));
-      return { name: c.title.length > 20 ? c.title.slice(0,20)+"…" : c.title, fullName: c.title, rate };
-    }).sort((a, b) => b.rate - a.rate);
-  }, [filteredCourses, filteredLearners, learnerRatio]);
-
-  const topCourses = useMemo(() => filteredCourses.map(c => {
-    const seed = hashStr(c.id + "score");
-    return { name: c.title.length > 26 ? c.title.slice(0,26)+"…" : c.title, fullName: c.title, score: Math.max(10, Math.round(((seed%50)+50)*learnerRatio)) };
-  }).sort((a, b) => b.score - a.score).slice(0, 8), [filteredCourses, learnerRatio]);
-
-  // Learner status donut
-  const statusDistribution = useMemo(() => [
-    { name: "Completed",   value: filteredLearners.filter(l => l.coursesCompleted > 0 && l.coursesInProgress === 0).length, color: "#10b981" },
-    { name: "In Progress", value: filteredLearners.filter(l => l.coursesInProgress > 0).length,                              color: "#6366f1" },
-    { name: "Not Started", value: filteredLearners.filter(l => l.coursesCompleted === 0 && l.coursesInProgress === 0).length, color: "#f59e0b" },
-  ].filter(d => d.value > 0), [filteredLearners]);
-
-  // Completion rate histogram
   const completionHistogram = useMemo(() => {
     const buckets = [
-      { label: "0%",    min: 0,   max: 0,   count: 0 },
-      { label: "1–25%", min: 1,   max: 25,  count: 0 },
-      { label: "26–50%",min: 26,  max: 50,  count: 0 },
-      { label: "51–75%",min: 51,  max: 75,  count: 0 },
-      { label: "76–99%",min: 76,  max: 99,  count: 0 },
-      { label: "100%",  min: 100, max: 100, count: 0 },
+      { label: "0%",     min: 0,   max: 0,   count: 0 },
+      { label: "1–25%",  min: 1,   max: 25,  count: 0 },
+      { label: "26–50%", min: 26,  max: 50,  count: 0 },
+      { label: "51–75%", min: 51,  max: 75,  count: 0 },
+      { label: "76–99%", min: 76,  max: 99,  count: 0 },
+      { label: "100%",   min: 100, max: 100, count: 0 },
     ];
     filteredLearners.forEach(l => {
       const total = l.coursesCompleted + l.coursesInProgress;
@@ -393,7 +328,6 @@ const AdminDashboard = () => {
     return buckets;
   }, [filteredLearners]);
 
-  // Learner funnel stages
   const funnelData = useMemo(() => [
     { name: "Registered",   value: filteredLearners.length,                                                                           fill: "#6366f1" },
     { name: "Enrolled",     value: filteredLearners.filter(l => l.coursesCompleted + l.coursesInProgress > 0).length,                 fill: "#3b82f6" },
@@ -413,6 +347,15 @@ const AdminDashboard = () => {
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
+  if ((isLoading || analyticsLoading) && learners.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-32 text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin" />
+        <p className="text-sm">Loading dashboard data…</p>
+      </div>
+    );
+  }
+
   return (
     <div ref={dashboardRef} className="space-y-6 pb-10">
 
@@ -426,9 +369,9 @@ const AdminDashboard = () => {
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={() => downloadCSV(globalExport, "dashboard-export")}>
+          {/* <Button variant="outline" size="sm" onClick={() => downloadCSV(globalExport, "dashboard-export")}>
             <Download className="h-3.5 w-3.5 mr-1.5" /> CSV
-          </Button>
+          </Button> */}
           <Button variant="outline" size="sm" onClick={downloadPDF} disabled={isPdfLoading}>
             {isPdfLoading
               ? <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Generating…</>
@@ -513,13 +456,13 @@ const AdminDashboard = () => {
                     </PopoverContent>
                   </Popover>
                 </div>
-                <div className="space-y-1">
+                {/* <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Search</Label>
                   <div className="relative">
                     <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                     <Input className="h-8 text-xs pl-7" placeholder="Name or email…" value={searchLearner} onChange={e => setSearchLearner(e.target.value)} />
                   </div>
-                </div>
+                </div> */}
               </div>
               {hasActiveFilters && (
                 <Button variant="ghost" size="sm" className="mt-3 h-7 text-xs" onClick={resetFilters}>
@@ -532,7 +475,7 @@ const AdminDashboard = () => {
       </Collapsible>
 
       {/* ═══════════════════════════════════════════════
-          SECTION 1 — KPI CARDS (5 × 2 grid)
+          SECTION 1 — KPI CARDS
       ═══════════════════════════════════════════════ */}
       <div>
         <SectionLabel>Key metrics</SectionLabel>
@@ -570,7 +513,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* ═══════════════════════════════════════════════
-          SECTION 2 — ENROLLMENT TREND (full width)
+          SECTION 2 — ENROLLMENT TREND
       ═══════════════════════════════════════════════ */}
       <div>
         <SectionLabel>Enrollment over time</SectionLabel>
@@ -613,7 +556,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* ═══════════════════════════════════════════════
-          SECTION 3 — LEARNER ENGAGEMENT (2/3 + 1/3)
+          SECTION 3 — LEARNER ENGAGEMENT
       ═══════════════════════════════════════════════ */}
       <div>
         <SectionLabel>Learner engagement</SectionLabel>
@@ -694,7 +637,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* ═══════════════════════════════════════════════
-          SECTION 4 — COMPLETION ANALYSIS (2/3 + 1/3)
+          SECTION 4 — COMPLETION ANALYSIS
       ═══════════════════════════════════════════════ */}
       <div>
         <SectionLabel>Completion analysis</SectionLabel>
@@ -752,7 +695,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* ═══════════════════════════════════════════════
-          SECTION 5 — FUNNEL + ORG RATES (1/2 + 1/2)
+          SECTION 5 — FUNNEL + ORG RATES
       ═══════════════════════════════════════════════ */}
       <div>
         <SectionLabel>Funnel & organisation performance</SectionLabel>
@@ -816,7 +759,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* ═══════════════════════════════════════════════
-          SECTION 6 — GEOGRAPHIC & CATEGORY (2/3 + 1/3)
+          SECTION 6 — GEOGRAPHIC & CATEGORY
       ═══════════════════════════════════════════════ */}
       <div>
         <SectionLabel>Geographic & course breakdown</SectionLabel>
@@ -885,7 +828,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* ═══════════════════════════════════════════════
-          SECTION 7 — ORG PROGRESS + TOP COURSES (1/2 + 1/2)
+          SECTION 7 — ORG PROGRESS + TOP COURSES
       ═══════════════════════════════════════════════ */}
       <div>
         <SectionLabel>Organisation progress & top courses</SectionLabel>

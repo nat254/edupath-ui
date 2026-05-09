@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { courseStore } from "@/data/courseStore";
 import { enrollmentStore } from "@/data/enrollmentStore";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,7 +13,13 @@ import RatePlatform from "@/components/RatePlatform";
 const LearnerDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const userId = user?.nationalId ?? "";
+  const userId = user?.id ?? "";
+
+  // Fetch this user's enrollments from the backend on mount
+  useEffect(() => {
+    if (userId) enrollmentStore.fetchMyEnrollments(userId);
+    courseStore.fetchAll();
+  }, [userId]);
 
   // Subscribe to live stores
   useSyncExternalStore(enrollmentStore.subscribe, enrollmentStore.getSnapshot);

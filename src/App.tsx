@@ -19,6 +19,7 @@ import { ReactNode } from "react";
 import ResetPinPage from "@/pages/ResetPinPage";
 import CourseFeedbackPage from "@/pages/CourseFeedbackPage";
 import ProfilePage from "@/pages/ProfilePage";
+import CategoriesPage from "@/pages/CategoriesPage";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
             <Route path="/learners" element={<ProtectedRoute adminOnly><LearnersPage /></ProtectedRoute>} />
             <Route path="/testimonials" element={<ProtectedRoute adminOnly><TestimonialsPage /></ProtectedRoute>} />
             <Route path="/feedback" element={<ProtectedRoute adminOnly><CourseFeedbackPage /></ProtectedRoute>} />
+            <Route path="/categories" element={<ProtectedRoute adminOnly><CategoriesPage /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
             <Route path="/reset-pin" element={<PublicRoute><ResetPinPage /></PublicRoute>} />
             <Route path="*" element={<NotFound />} />

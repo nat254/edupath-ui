@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, BookOpen, Users, LogOut, GraduationCap, MessageSquare, Star, UserCircle,
+  LayoutDashboard, BookOpen, Users, LogOut, GraduationCap, MessageSquare, Star, UserCircle, Tags,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +13,7 @@ import {
 const adminLinks = [
   { title: "Dashboard",       url: "/dashboard",    icon: LayoutDashboard },
   { title: "Courses",         url: "/courses",      icon: BookOpen },
+  { title: "Categories",      url: "/categories",   icon: Tags },
   { title: "Learners",        url: "/learners",     icon: Users },
   { title: "Course Feedback", url: "/feedback",     icon: Star },
   { title: "Testimonials",    url: "/testimonials", icon: MessageSquare },

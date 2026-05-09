@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { enrollmentStore } from "@/data/enrollmentStore";
@@ -196,8 +196,17 @@ const ProfilePage = () => {
   };
 
   // ── Activity stats (learners only) ──────────────────────────────────────────
-  const myEnrollments = enrollmentStore.getMyEnrollments(user.nationalId);
-  const allCourses = courseStore.getAll();
+  // Fetch from backend on mount so the Activity tab reflects real DB state
+  useEffect(() => {
+    if (!isAdmin && user.id) {
+      enrollmentStore.fetchMyEnrollments(user.id);
+      courseStore.fetchAll();
+    }
+  }, [isAdmin, user.id]);
+
+  useSyncExternalStore(enrollmentStore.subscribe, enrollmentStore.getSnapshot);
+  const allCourses = useSyncExternalStore(courseStore.subscribe, courseStore.getAll);
+  const myEnrollments = enrollmentStore.getMyEnrollments(user.id);
   const completed = myEnrollments.filter((e) => e.status === "complete").length;
   const inProgress = myEnrollments.filter((e) => e.status === "in_progress").length;
   const avgProgress =

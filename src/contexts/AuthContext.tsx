@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, ReactNode } from "react";
 export type UserRole = "admin" | "learner";
 
 export interface User {
+  id: string;
   nationalId: string;
   email: string;
   organization: string;

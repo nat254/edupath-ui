@@ -1,4 +1,4 @@
-import { useState, useMemo, useSyncExternalStore } from "react";
+import { useState, useMemo, useEffect, useSyncExternalStore } from "react";
 import { useNavigate } from "react-router-dom";
 import { courseStore } from "@/data/courseStore";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +12,13 @@ const LandingPage = () => {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const navigate = useNavigate();
+
+  // Fetch courses from API on mount & subscribe reactively
+  useEffect(() => {
+    courseStore.fetchAll();
+    testimonialStore.fetchApproved();
+  }, []);
+
   const testimonials = useSyncExternalStore(testimonialStore.subscribe, testimonialStore.getAll);
   const courses = useSyncExternalStore(courseStore.subscribe, courseStore.getAll);
 
@@ -115,10 +122,26 @@ const LandingPage = () => {
             {filtered.map((c) => (
               <Card
                 key={c.id}
-                className="group cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all duration-200"
+                className="group cursor-pointer hover:shadow-lg hover:border-primary/40 transition-all duration-200 flex flex-col overflow-hidden"
                 onClick={() => navigate("/login")}
               >
-                <CardContent className="p-5 space-y-3">
+                {/* Cover Image */}
+                <div className="w-full h-36 overflow-hidden rounded-t-lg bg-muted">
+                  {c.coverImage ? (
+                    <img
+                      src={c.coverImage}
+                      alt={c.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-primary/10">
+                      <span className="text-3xl font-bold text-primary/40">
+                        {c.category.charAt(0)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <CardContent className="p-5 space-y-3 flex flex-col flex-1">
                   <div className="flex items-center justify-between">
                     <Badge variant="secondary" className="text-xs">{c.category}</Badge>
                     <Badge variant="outline" className="text-xs">{c.duration}</Badge>
