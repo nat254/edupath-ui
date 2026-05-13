@@ -8,18 +8,18 @@ import AppLayout from "@/components/AppLayout";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
 import DashboardPage from "@/pages/DashboardPage";
-import CourseListPage from "@/pages/CourseListPage";
-import CreateCoursePage from "@/pages/CreateCoursePage";
-import CoursePlayerPage from "@/pages/CoursePlayerPage";
-import LearnersPage from "@/pages/LearnersPage";
-import TestimonialsPage from "@/pages/Testimonials";
+import CourseListPage from "@/pages/client/CourseListPage";
+import CreateCoursePage from "@/pages/admin/CreateCoursePage";
+import CoursePlayerPage from "@/pages/client/CoursePlayerPage";
+import LearnersPage from "@/pages/admin/LearnersPage";
+import TestimonialsPage from "@/pages/admin/Testimonials";
 import LandingPage from "@/pages/LandingPage";
 import NotFound from "@/pages/NotFound";
 import { ReactNode } from "react";
 import ResetPinPage from "@/pages/ResetPinPage";
-import CourseFeedbackPage from "@/pages/CourseFeedbackPage";
+import CourseFeedbackPage from "@/pages/admin/CourseFeedbackPage";
 import ProfilePage from "@/pages/ProfilePage";
-import CategoriesPage from "@/pages/CategoriesPage";
+import CategoriesPage from "@/pages/admin/CategoriesPage";
 
 const queryClient = new QueryClient();
 

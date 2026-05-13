@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useSyncExternalStore } from "react";
 import { useNavigate } from "react-router-dom";
 import { courseStore } from "@/data/courseStore";
+import { learnerStore } from "@/data/learnerStore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -16,11 +17,13 @@ const LandingPage = () => {
   // Fetch courses from API on mount & subscribe reactively
   useEffect(() => {
     courseStore.fetchAll();
+    learnerStore.fetchAll();
     testimonialStore.fetchApproved();
   }, []);
 
   const testimonials = useSyncExternalStore(testimonialStore.subscribe, testimonialStore.getAll);
   const courses = useSyncExternalStore(courseStore.subscribe, courseStore.getAll);
+  const learners = useSyncExternalStore(learnerStore.subscribe, learnerStore.getAll);
 
   const allCategories = useMemo(() => {
     const cats = Array.from(new Set(courses.map((c: { category: string }) => c.category)));
@@ -65,8 +68,8 @@ const LandingPage = () => {
           <div className="mt-8 flex flex-wrap justify-center gap-6">
             {[
               { icon: BookOpen, label: `${courses.length} Courses`, sub: "Expert-crafted" },
-              { icon: Users, label: "500+ Learners", sub: "And growing" },
-              { icon: Award, label: "Certified", sub: "Upon completion" },
+              { icon: Users, label: `${learners.length} Learners`, sub: "And growing" },
+              // { icon: Award, label: "Certified", sub: "Upon completion" },
             ].map((s) => (
               <div key={s.label} className="flex items-center gap-3 bg-card border border-border rounded-xl px-5 py-3 shadow-sm">
                 <s.icon className="h-5 w-5 text-primary" />
