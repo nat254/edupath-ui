@@ -1,6 +1,7 @@
-import { useState, useSyncExternalStore, useMemo } from "react";
+import { useState, useEffect, useSyncExternalStore, useMemo } from "react";
 import { learnerStore, Learner } from "@/data/learnerStore";
-import { organizations, kenyanCounties } from "@/data/mockData";
+import { organizations } from "@/data/mockData";
+import kenyanCounties from "@/data/kenyanCounties.json";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,9 +18,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
-  Pencil, Trash2, Plus, Download, KeyRound, Search, ChevronLeft, ChevronRight,
+  Pencil, Trash2, Plus, Download, Search, ChevronLeft, ChevronRight,
   ChevronUp, ChevronDown, Users, BookOpen, Award, Clock, FileSpreadsheet,
-  X, CheckSquare, Square, Minus, Eye, ArrowUpDown,
+  X, CheckSquare, Square, Minus, Eye, ArrowUpDown, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -86,21 +87,18 @@ const SortIcon = ({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; s
 
 const LearnersPage = () => {
   const learners = useSyncExternalStore(learnerStore.subscribe, learnerStore.getAll);
+  const isLoading = useSyncExternalStore(learnerStore.subscribe, learnerStore.getIsLoading);
   const { user } = useAuth();
+
+  // ── Fetch on mount ────────────────────────────────────────────────────────
+  useEffect(() => { learnerStore.fetchAll(); }, []);
 
   // ── Dialog state ──────────────────────────────────────────────────────────
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // ── Password reset state ──────────────────────────────────────────────────
-  const [resetDialogOpen, setResetDialogOpen] = useState(false);
-  const [resetTarget, setResetTarget] = useState<Learner | null>(null);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   // ── View/Detail state ─────────────────────────────────────────────────────
   const [viewTarget, setViewTarget] = useState<Learner | null>(null);
@@ -182,36 +180,29 @@ const LearnersPage = () => {
     return Object.keys(e).length === 0;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validate()) return;
-    if (editId) { learnerStore.update(editId, form); toast.success("Learner updated"); }
-    else { learnerStore.add(form); toast.success("Learner added"); }
-    setDialogOpen(false);
+    setSaving(true);
+    try {
+      if (editId) { await learnerStore.update(editId, form); toast.success("Learner updated"); }
+      else { await learnerStore.add(form); toast.success("Learner added"); }
+      setDialogOpen(false);
+    } catch (err) {
+      toast.error(`Failed to save: ${err instanceof Error ? err.message : "Unknown error"}`);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = (id: string, name: string) => {
-    learnerStore.remove(id);
-    setSelected(s => { const n = new Set(s); n.delete(id); return n; });
-    toast.success(`"${name}" removed`);
+  const handleDelete = async (id: string, name: string) => {
+    try {
+      await learnerStore.remove(id);
+      setSelected(s => { const n = new Set(s); n.delete(id); return n; });
+      toast.success(`"${name}" removed`);
+    } catch (err) {
+      toast.error(`Failed to delete: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
   };
-
-  // ── Handlers: password reset ──────────────────────────────────────────────
-
-  // const openReset = (l: Learner) => {
-  //   setResetTarget(l);
-  //   setNewPassword(""); setConfirmPassword(""); setPasswordError("");
-  //   setShowPassword(false);
-  //   setResetDialogOpen(true);
-  // };
-
-  // const handleResetPassword = () => {
-  //   if (!newPassword) { setPasswordError("Password is required"); return; }
-  //   if (newPassword.length < 8) { setPasswordError("Minimum 8 characters"); return; }
-  //   if (newPassword !== confirmPassword) { setPasswordError("Passwords do not match"); return; }
-  //   // learnerStore.resetPassword(resetTarget!.id, newPassword);
-  //   toast.success(`Password reset for ${resetTarget?.email}`);
-  //   setResetDialogOpen(false);
-  // };
 
   // ── Handlers: sort ────────────────────────────────────────────────────────
 
@@ -237,10 +228,15 @@ const LearnersPage = () => {
     else setSelected(s => { const n = new Set(s); paginated.forEach(l => n.add(l.id)); return n; });
   };
 
-  const handleBulkDelete = () => {
-    selected.forEach(id => learnerStore.remove(id));
-    toast.success(`${selected.size} learner${selected.size > 1 ? "s" : ""} removed`);
-    setSelected(new Set());
+  const handleBulkDelete = async () => {
+    const ids = [...selected];
+    try {
+      await Promise.all(ids.map(id => learnerStore.remove(id)));
+      toast.success(`${ids.length} learner${ids.length > 1 ? "s" : ""} removed`);
+      setSelected(new Set());
+    } catch (err) {
+      toast.error(`Failed to delete some learners: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
   };
 
   // ── Handlers: export ──────────────────────────────────────────────────────
@@ -428,7 +424,13 @@ const LearnersPage = () => {
               </tr>
             </thead>
             <tbody>
-              {paginated.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={9} className="text-center text-muted-foreground py-16">
+                    <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                  </td>
+                </tr>
+              ) : paginated.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="text-center text-muted-foreground py-16 text-sm">
                     {hasFilters ? "No learners match your filters." : "No learners yet. Add your first one!"}
@@ -604,77 +606,17 @@ const LearnersPage = () => {
             </div>
           </div>
           <DialogFooter>
-            <DialogClose asChild><Button variant="outline" size="sm">Cancel</Button></DialogClose>
-            <Button size="sm" onClick={handleSave}>{editId ? "Save Changes" : "Add Learner"}</Button>
+            <DialogClose asChild><Button variant="outline" size="sm" disabled={saving}>Cancel</Button></DialogClose>
+            <Button size="sm" onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+              {editId ? "Save Changes" : "Add Learner"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── Reset Password Dialog ── */}
-      {/* <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Reset Password</DialogTitle>
-          </DialogHeader>
-          <div className="py-1">
-            <p className="text-sm text-muted-foreground mb-4">
-              Setting a new password for <span className="font-medium text-foreground">{resetTarget?.email}</span>
-            </p>
-            <div className="space-y-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">New Password *</Label>
-                <div className="relative">
-                  <Input
-                    className="h-8 text-sm pr-20"
-                    type={showPassword ? "text" : "password"}
-                    value={newPassword}
-                    onChange={e => { setNewPassword(e.target.value); setPasswordError(""); }}
-                    placeholder="Min. 8 characters"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground hover:text-foreground"
-                    onClick={() => setShowPassword(v => !v)}
-                  >{showPassword ? "Hide" : "Show"}</button>
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Confirm Password *</Label>
-                <Input
-                  className="h-8 text-sm"
-                  type={showPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={e => { setConfirmPassword(e.target.value); setPasswordError(""); }}
-                  placeholder="Re-enter password"
-                />
-              </div>
-              {/* Password strength indicator */}
-              {/* {newPassword.length > 0 && (
-                <div className="space-y-1">
-                  <div className="flex gap-1">
-                    {[1,2,3,4].map(n => (
-                      <div key={n} className={cn("flex-1 h-1 rounded-full transition-colors", {
-                        "bg-red-400": newPassword.length >= n * 2 && newPassword.length < 8,
-                        "bg-amber-400": newPassword.length >= 8 && n <= 2,
-                        "bg-emerald-400": newPassword.length >= 8 && /[^a-zA-Z0-9]/.test(newPassword) && n <= (newPassword.length >= 12 ? 4 : 3),
-                        "bg-muted": newPassword.length < n * 2,
-                      })} />
-                    ))}
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    {newPassword.length < 8 ? "Too short" : /[^a-zA-Z0-9]/.test(newPassword) ? newPassword.length >= 12 ? "Strong password" : "Good password" : "Add symbols for a stronger password"}
-                  </p>
-                </div>
-              )}
-              {passwordError && <p className="text-destructive text-xs">{passwordError}</p>}
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild><Button variant="outline" size="sm">Cancel</Button></DialogClose>
-            <Button size="sm" onClick={handleResetPassword}>Reset Password</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog> */} 
+
+
 
       {/* ── View / Detail Dialog ── */}
       <Dialog open={viewOpen} onOpenChange={setViewOpen}>

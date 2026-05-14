@@ -1,4 +1,4 @@
-const BASE = "http://localhost:5000";
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export interface Learner {
   id: string;
@@ -55,5 +55,39 @@ export const learnerStore = {
       isLoading = false;
       emit();
     }
+  },
+
+  /** Create a new learner via the backend API */
+  async add(payload: Omit<Learner, "id">): Promise<void> {
+    const res = await fetch(`${BASE}/learners`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const created: Learner = await res.json();
+    learnerList = [...learnerList, created];
+    emit();
+  },
+
+  /** Update an existing learner via the backend API */
+  async update(id: string, payload: Partial<Omit<Learner, "id">>): Promise<void> {
+    const res = await fetch(`${BASE}/learners/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const updated: Learner = await res.json();
+    learnerList = learnerList.map((l) => (l.id === id ? updated : l));
+    emit();
+  },
+
+  /** Delete a learner via the backend API */
+  async remove(id: string): Promise<void> {
+    const res = await fetch(`${BASE}/learners/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error(await res.text());
+    learnerList = learnerList.filter((l) => l.id !== id);
+    emit();
   },
 };

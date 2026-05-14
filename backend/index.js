@@ -481,6 +481,56 @@ app.get("/learners", async (_req, res) => {
   }
 });
 
+// PATCH /learners/:id – update learner profile (admin)
+app.patch("/learners/:id", async (req, res) => {
+  const { id } = req.params;
+  const { name, email, nationalId, organization, county } = req.body;
+  try {
+    const sets = [];
+    const vals = [];
+    let idx = 1;
+    const push = (col, val) => { sets.push(`${col} = $${idx++}`); vals.push(val); };
+
+    if (name !== undefined)         push("name", name);
+    if (email !== undefined)        push("email", email);
+    if (nationalId !== undefined)   push("national_id", nationalId);
+    if (organization !== undefined) push("organization", organization);
+    if (county !== undefined)       push("county", county);
+
+    if (sets.length === 0)
+      return res.status(400).json({ error: "No fields to update" });
+
+    vals.push(id);
+    const result = await pool.query(
+      `UPDATE users SET ${sets.join(", ")} WHERE id = $${idx} AND role = 'learner'
+       RETURNING id, national_id AS "nationalId", name, email, organization, county`,
+      vals,
+    );
+    if (result.rowCount === 0)
+      return res.status(404).json({ error: "Learner not found" });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Update learner error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /learners/:id – remove a learner (admin)
+app.delete("/learners/:id", async (req, res) => {
+  try {
+    const result = await pool.query(
+      "DELETE FROM users WHERE id = $1 AND role = 'learner'",
+      [req.params.id],
+    );
+    if (result.rowCount === 0)
+      return res.status(404).json({ error: "Learner not found" });
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Delete learner error:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ═══════════════════════════════════════════════════════════════════════════
 // COURSE FEEDBACK
 // ═══════════════════════════════════════════════════════════════════════════

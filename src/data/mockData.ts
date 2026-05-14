@@ -117,15 +117,6 @@ export const notifications = [
   { id: "3", message: "Course 'Emergency Response' deadline is approaching.", time: "3 days ago", read: true },
 ];
 
-export const kenyanCounties = [
-  "Baringo", "Bomet", "Bungoma", "Busia", "Elgeyo-Marakwet", "Embu", "Garissa",
-  "Homa Bay", "Isiolo", "Kajiado", "Kakamega", "Kericho", "Kiambu", "Kilifi",
-  "Kirinyaga", "Kisii", "Kisumu", "Kitui", "Kwale", "Laikipia", "Lamu", "Machakos",
-  "Makueni", "Mandera", "Marsabit", "Meru", "Migori", "Mombasa", "Murang'a",
-  "Nairobi", "Nakuru", "Nandi", "Narok", "Nyamira", "Nyandarua", "Nyeri",
-  "Samburu", "Siaya", "Taita-Taveta", "Tana River", "Tharaka-Nithi", "Trans-Nzoia",
-  "Turkana", "Uasin Gishu", "Vihiga", "Wajir", "West Pokot",
-];
 
 export const mockLearners = [
   { id: "1", name: "Jane Wanjiku", email: "janewanjiku@gmail.com", nationalId: "1234567890", organization: "Kenyatta National Hospital", county: "Nairobi", coursesCompleted: 3, coursesInProgress: 2 },
