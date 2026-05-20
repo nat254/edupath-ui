@@ -1,15 +1,6 @@
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { Testimonial } from "./types";
 
-export interface Testimonial {
-  id: string;
-  name: string;
-  county?: string;       // joined from users table
-  role: string;
-  rating: number;
-  text: string;
-  isApproved?: boolean;
-  createdAt?: string;
-}
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 let testimonials: Testimonial[] = [];
 let listeners: Array<() => void> = [];

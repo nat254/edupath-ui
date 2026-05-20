@@ -1,4 +1,4 @@
-import { Course } from "@/data/mockData";
+import { Course } from "@/data/types";
 import { enrollmentStore } from "@/data/enrollmentStore";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";

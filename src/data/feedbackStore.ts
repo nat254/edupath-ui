@@ -1,15 +1,6 @@
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { CourseFeedback } from "./types";
 
-export interface CourseFeedback {
-  id: string;
-  courseId: string;
-  courseName: string;
-  userId: string;
-  userName: string;
-  rating: number;        // 1-5
-  comment: string;
-  submittedAt: string;   // ISO date string
-}
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 let feedbackList: CourseFeedback[] = [];
 let listeners: (() => void)[] = [];

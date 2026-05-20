@@ -29,7 +29,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import CourseDetailModal from "@/components/CourseDetailModal";
-import { Course } from "@/data/mockData";
+import { Course } from "@/data/types";
 
 const CourseListPage = () => {
   const navigate = useNavigate();

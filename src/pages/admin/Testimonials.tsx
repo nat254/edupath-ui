@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { testimonialStore, Testimonial } from "@/data/testimonialStore";
+import { testimonialStore } from "@/data/testimonialStore";
+import { Testimonial } from "@/data/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

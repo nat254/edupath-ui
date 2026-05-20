@@ -1,5 +1,6 @@
 import { useState, useEffect, useSyncExternalStore, useMemo } from "react";
-import { learnerStore, Learner } from "@/data/learnerStore";
+import { learnerStore } from "@/data/learnerStore";
+import { Learner } from "@/data/types";
 import { organizations } from "@/data/mockData";
 import kenyanCounties from "@/data/kenyanCounties.json";
 import { useAuth } from "@/contexts/AuthContext";

@@ -1,5 +1,6 @@
 import { useState, useEffect, useSyncExternalStore } from "react";
-import { categoryStore, Category } from "@/data/categoryStore";
+import { categoryStore } from "@/data/categoryStore";
+import { Category } from "@/data/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

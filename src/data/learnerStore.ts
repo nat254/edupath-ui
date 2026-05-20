@@ -1,15 +1,6 @@
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { Learner } from "./types";
 
-export interface Learner {
-  id: string;
-  name: string;
-  email: string;
-  nationalId: string;
-  organization: string;
-  county: string;
-  coursesCompleted: number;
-  coursesInProgress: number;
-}
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 let learnerList: Learner[] = [];
 let isLoading = false;

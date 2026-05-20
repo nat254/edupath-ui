@@ -1,8 +1,4 @@
-export interface Category {
-  id: string;
-  name: string;
-  createdAt: string;
-}
+import { Category } from "./types";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 

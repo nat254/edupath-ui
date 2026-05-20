@@ -1,13 +1,6 @@
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { Enrollment } from "./types";
 
-export interface Enrollment {
-  courseId: string;
-  userId: string;        // nationalId from AuthContext
-  progress: number;      // 0–100
-  status: "in_progress" | "complete";
-  startedAt: string;
-  completedAt?: string | null;
-}
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 let enrollments: Enrollment[] = [];
 let listeners: (() => void)[] = [];

@@ -1,14 +1,6 @@
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+import { AnalyticsData } from "./types";
 
-export interface AnalyticsData {
-  trend: { month: string; date: string; enrollments: number; completions: number }[];
-  daily: { day: string; date: string; enrollments: number }[];
-  county: { name: string; count: number }[];
-  courseCompletion: { id: string; name: string; fullName: string; rate: number }[];
-  topCourses: { id: string; name: string; fullName: string; score: number }[];
-  orgProgress: { name: string; completed: number; inProgress: number; total: number; rate: number }[];
-  status: { completed: number; inProgress: number; notStarted: number };
-}
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const empty: AnalyticsData = {
   trend: [], 

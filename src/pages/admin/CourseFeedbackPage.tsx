@@ -1,5 +1,6 @@
 import { useState, useEffect, useSyncExternalStore } from "react";
-import { feedbackStore, CourseFeedback } from "@/data/feedbackStore";
+import { feedbackStore } from "@/data/feedbackStore";
+import { CourseFeedback } from "@/data/types";
 import { courseStore } from "@/data/courseStore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
