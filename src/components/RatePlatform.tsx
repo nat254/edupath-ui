@@ -59,7 +59,7 @@ const RatePlatform = () => {
       <Card className="border-primary/20 bg-primary/5">
         <CardContent className="p-6 text-center space-y-2">
           <MessageSquareHeart className="h-8 w-8 text-primary mx-auto" />
-          <p className="font-semibold text-foreground">Thanks for rating TrainHub!</p>
+          <p className="font-semibold text-foreground">Thanks for rating Training Portal!</p>
           <p className="text-sm text-muted-foreground">Your review will appear on our landing page once approved.</p>
         </CardContent>
       </Card>
@@ -71,7 +71,7 @@ const RatePlatform = () => {
       <CardContent className="p-6 space-y-4">
         <div className="flex items-center gap-2">
           <MessageSquareHeart className="h-5 w-5 text-primary" />
-          <h3 className="font-semibold text-foreground">Rate TrainHub</h3>
+          <h3 className="font-semibold text-foreground">Rate Training Portal</h3>
         </div>
         <p className="text-sm text-muted-foreground">Share your experience to help other learners.</p>
 

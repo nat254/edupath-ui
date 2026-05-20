@@ -92,7 +92,7 @@ const LandingPage = () => {
               <GraduationCap className="h-5 w-5 text-primary group-hover:scale-110 transition-transform duration-300" />
             </div>
             <span className="text-lg font-bold text-foreground tracking-tight">
-              Train<span className="text-primary">Hub</span>
+              Training<span className="text-primary">Portal</span>
             </span>
           </div>
           <div className="flex gap-2">
@@ -223,7 +223,7 @@ const LandingPage = () => {
       <section ref={featuresSection.ref} className="border-t border-border/50 bg-gradient-to-b from-muted/30 to-background">
         <div className="max-w-6xl mx-auto px-4 py-16">
           <div className={`text-center mb-12 ${featuresSection.visible ? "animate-fade-up" : "opacity-0"}`}>
-            <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Why Choose TrainHub?</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Why Choose Training Portal?</h2>
             <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
               Built specifically for healthcare organizations to deliver impactful training
             </p>
@@ -414,7 +414,7 @@ const LandingPage = () => {
             Ready to Transform Your Training?
           </h2>
           <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-            Join healthcare professionals already learning on TrainHub. Start your journey today — it&apos;s completely free.
+            Join healthcare professionals already learning on Training Portal. Start your journey today — it&apos;s completely free.
           </p>
           <Button
             size="lg"
@@ -433,11 +433,11 @@ const LandingPage = () => {
           <div className="flex items-center gap-2">
             <GraduationCap className="h-5 w-5 text-primary" />
             <span className="text-sm font-semibold text-foreground">
-              Train<span className="text-primary">Hub</span>
+              Training<span className="text-primary">Portal</span>
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            © 2026 TrainHub. All rights reserved.
+            © 2026 Training Portal. All rights reserved.
           </p>
         </div>
       </footer>
