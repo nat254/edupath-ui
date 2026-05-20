@@ -11,8 +11,11 @@ export interface AnalyticsData {
 }
 
 const empty: AnalyticsData = {
-  trend: [], daily: [], county: [],
-  courseCompletion: [], topCourses: [],
+  trend: [], 
+  daily: [], 
+  county: [],
+  courseCompletion: [], 
+  topCourses: [],
   orgProgress: [],
   status: { completed: 0, inProgress: 0, notStarted: 0 },
 };
