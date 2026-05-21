@@ -1,7 +1,7 @@
 import { useState, useEffect, useSyncExternalStore, useMemo } from "react";
 import { learnerStore } from "@/data/learnerStore";
 import { Learner } from "@/data/types";
-import { organizations } from "@/data/mockData";
+import  organizations  from "@/data/facilities.json";
 import kenyanCounties from "@/data/kenyanCounties.json";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

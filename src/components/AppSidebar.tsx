@@ -44,7 +44,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>
             <GraduationCap className="mr-2 h-4 w-4" />
-            {!collapsed && <span>TMS</span>}
+            {!collapsed && <span>Training Portal</span>}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>

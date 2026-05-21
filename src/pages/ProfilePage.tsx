@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { enrollmentStore } from "@/data/enrollmentStore";
 import { courseStore } from "@/data/courseStore";
 import kenyanCounties from "@/data/kenyanCounties.json";
-import { organizations } from "@/data/mockData";
+import organizations  from "@/data/facilities.json";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

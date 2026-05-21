@@ -133,7 +133,7 @@ const AdminDashboard = () => {
   const learners = useSyncExternalStore(learnerStore.subscribe, learnerStore.getAll);
   const isLoading = useSyncExternalStore(learnerStore.subscribe, learnerStore.getIsLoading);
   const analytics    = useSyncExternalStore(analyticsStore.subscribe, analyticsStore.getData);
-const analyticsLoading = useSyncExternalStore(analyticsStore.subscribe, analyticsStore.getIsLoading);
+  const analyticsLoading = useSyncExternalStore(analyticsStore.subscribe, analyticsStore.getIsLoading);
   const dashboardRef = useRef<HTMLDivElement>(null);
   const [isPdfLoading, setIsPdfLoading] = useState(false);
 
@@ -269,6 +269,7 @@ const dailyTrend   = analytics.daily;
   const completionRate  = totalEnrolled > 0 ? Math.round((totalCompleted / totalEnrolled) * 100) : 0;
   const activeLearners  = filteredLearners.filter(l => l.coursesInProgress > 0).length;
   const notStarted      = filteredLearners.filter(l => l.coursesCompleted === 0 && l.coursesInProgress === 0).length;
+  const completedLearners = filteredLearners.filter(l => l.coursesCompleted > 0 && l.coursesInProgress === 0).length;
   const atRisk          = filteredLearners.filter(l => l.coursesCompleted === 0 && l.coursesInProgress > 0).length;
   const avgCourses      = filteredLearners.length > 0 ? (totalEnrolled / filteredLearners.length).toFixed(1) : "0";
 
@@ -279,15 +280,15 @@ const dailyTrend   = analytics.daily;
   const wowChange   = prev7 > 0 ? Math.round(((recent7 - prev7) / prev7) * 100) : 10;
 
   const kpis = [
-    { label: "Total Learners",        value: filteredLearners.length, icon: Users,         trend: 12,                         color: "text-indigo-600",  bg: "bg-indigo-50 dark:bg-indigo-950/40",   spark: filteredTrend.slice(-8).map(d => d.enrollments) },
-    { label: "Active",                value: activeLearners,          icon: UserCheck,     trend: 8,                          color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-950/40", spark: filteredTrend.slice(-8).map(d => Math.round(d.enrollments * 0.6)) },
-    { label: "Completions",           value: totalCompleted,          icon: Award,         trend: 15,                         color: "text-blue-600",    bg: "bg-blue-50 dark:bg-blue-950/40",       spark: filteredTrend.slice(-8).map(d => d.completions) },
+    { label: "Total Learners",        value: hasActiveFilters ? filteredLearners.length : (analytics.status.completed + analytics.status.inProgress + analytics.status.notStarted), icon: Users,         trend: 12,                         color: "text-indigo-600",  bg: "bg-indigo-50 dark:bg-indigo-950/40",   spark: filteredTrend.slice(-8).map(d => d.enrollments) },
+    { label: "Active",                value: hasActiveFilters ? activeLearners : analytics.status.inProgress,          icon: UserCheck,     trend: 8,                          color: "text-emerald-600", bg: "bg-emerald-50 dark:bg-emerald-950/40", spark: filteredTrend.slice(-8).map(d => Math.round(d.enrollments * 0.6)) },
+    { label: "Completions",           value: hasActiveFilters ? completedLearners : analytics.status.completed,          icon: Award,         trend: 15,                         color: "text-blue-600",    bg: "bg-blue-50 dark:bg-blue-950/40",       spark: filteredTrend.slice(-8).map(d => d.completions) },
     { label: "In Progress",           value: totalInProgress,         icon: Clock,         trend: totalInProgress > 5 ? 6:-2, color: "text-amber-600",   bg: "bg-amber-50 dark:bg-amber-950/40",    spark: filteredTrend.slice(-8).map(d => Math.round(d.completions * 0.5)) },
     { label: "Completion Rate",       value: `${completionRate}%`,    icon: Percent,       trend: completionRate > 50 ? 4:-8, color: "text-teal-600",    bg: "bg-teal-50 dark:bg-teal-950/40",      spark: Array.from({length:8},(_,i) => 40 + i*5) },
-    { label: "Not Started",           value: notStarted,              icon: AlertTriangle, trend: notStarted > 3 ? -5 : 2,   color: "text-rose-600",    bg: "bg-rose-50 dark:bg-rose-950/40",      spark: Array.from({length:8},(_,i) => 8 - i) },
+    { label: "Not Started",           value: hasActiveFilters ? notStarted : analytics.status.notStarted,              icon: AlertTriangle, trend: notStarted > 3 ? -5 : 2,   color: "text-rose-600",    bg: "bg-rose-50 dark:bg-rose-950/40",      spark: Array.from({length:8},(_,i) => 8 - i) },
     { label: "Courses",               value: filteredCourses.length,  icon: BookOpen,      trend: 5,                          color: "text-violet-600",  bg: "bg-violet-50 dark:bg-violet-950/40",  spark: [3,3,4,4,4,5,5,filteredCourses.length] },
     { label: "Avg Courses / Learner", value: avgCourses,              icon: GraduationCap, trend: 3,                          color: "text-cyan-600",    bg: "bg-cyan-50 dark:bg-cyan-950/40",      spark: Array.from({length:8},(_,i) => 1.5 + i * 0.2) },
-    { label: "At Risk",               value: atRisk,                  icon: Target,        trend: atRisk > 2 ? -10 : 5,       color: "text-orange-600",  bg: "bg-orange-50 dark:bg-orange-950/40",  spark: Array.from({length:8},(_,i) => 4 - i * 0.3) },
+    // { label: "At Risk",               value: atRisk,                  icon: Target,        trend: atRisk > 2 ? -10 : 5,       color: "text-orange-600",  bg: "bg-orange-50 dark:bg-orange-950/40",  spark: Array.from({length:8},(_,i) => 4 - i * 0.3) },
     { label: "Enrolled (7d)",         value: recent7,                 icon: Activity,      trend: wowChange,                  color: "text-pink-600",    bg: "bg-pink-50 dark:bg-pink-950/40",      spark: dailyTrend.slice(-7).map(d => d.enrollments), sub: `${recent30} in 30 days` },
   ];
 
@@ -305,9 +306,9 @@ const dailyTrend   = analytics.daily;
   const topCourses = analytics.topCourses ;
 
   const statusDistribution = [
-    { name: "Completed",   value: analytics.status.completed, color: "#10b981" },
-    { name: "In Progress", value: analytics.status.inProgress,color: "#6366f1" },
-    { name: "Not Started", value: analytics.status.notStarted, color: "#f59e0b" },
+    { name: "Completed",   value: hasActiveFilters ? completedLearners : analytics.status.completed, color: "#10b981" },
+    { name: "In Progress", value: hasActiveFilters ? activeLearners : analytics.status.inProgress, color: "#6366f1" },
+    { name: "Not Started", value: hasActiveFilters ? notStarted : analytics.status.notStarted, color: "#f59e0b" },
   ].filter(d => d.value > 0);
 
   const completionHistogram = useMemo(() => {
@@ -329,10 +330,9 @@ const dailyTrend   = analytics.daily;
   }, [filteredLearners]);
 
   const funnelData = useMemo(() => [
-    { name: "Registered",   value: filteredLearners.length,                                                                           fill: "#6366f1" },
-    { name: "Enrolled",     value: filteredLearners.filter(l => l.coursesCompleted + l.coursesInProgress > 0).length,                 fill: "#3b82f6" },
+    { name: "Enrolled",     value: filteredLearners.filter(l => l.coursesCompleted + l.coursesInProgress > 0).length,                 fill: "#6366f1" },
     { name: "In Progress",  value: filteredLearners.filter(l => l.coursesInProgress > 0).length,                                      fill: "#f59e0b" },
-    { name: "Completed ≥1", value: filteredLearners.filter(l => l.coursesCompleted > 0).length,                                       fill: "#10b981" },
+    { name: "Completed",    value: filteredLearners.filter(l => l.coursesCompleted > 0).length,                                       fill: "#10b981" },
   ], [filteredLearners]);
 
   const orgCompletionRates = useMemo(() => orgData.map(d => ({
@@ -489,7 +489,7 @@ const dailyTrend   = analytics.daily;
                     <div className={cn("h-8 w-8 rounded-lg flex items-center justify-center flex-shrink-0", kpi.bg)}>
                       <kpi.icon className={cn("h-4 w-4", kpi.color)} />
                     </div>
-                    <span className={cn(
+                    {/* <span className={cn(
                       "flex items-center gap-0.5 text-[10px] font-medium rounded-full px-1.5 py-0.5",
                       positive
                         ? "text-emerald-700 bg-emerald-100 dark:bg-emerald-950/60 dark:text-emerald-400"
@@ -497,14 +497,14 @@ const dailyTrend   = analytics.daily;
                     )}>
                       {positive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                       {Math.abs(kpi.trend)}%
-                    </span>
+                    </span> */}
                   </div>
                   <p className="text-xl font-bold tabular-nums leading-none">{kpi.value}</p>
                   <p className="text-[11px] text-muted-foreground mt-1 leading-tight">{kpi.label}</p>
                   {kpi.sub && <p className="text-[10px] text-muted-foreground/60 mt-0.5">{kpi.sub}</p>}
-                  <div className="mt-2.5">
+                  {/* <div className="mt-2.5">
                     <Sparkline data={kpi.spark} color={positive ? "#10b981" : "#ef4444"} />
-                  </div>
+                  </div> */}
                 </CardContent>
               </Card>
             );
@@ -706,23 +706,25 @@ const dailyTrend   = analytics.daily;
               <p className="text-xs text-muted-foreground">Drop-off at each stage</p>
             </CardHeader>
             <CardContent className="space-y-3 pt-2">
-              {funnelData.length === 0 || funnelData[0].value === 0 ? <EmptyState /> : funnelData.map((stage, i) => {
-                const pct     = funnelData[0].value > 0 ? Math.round((stage.value / funnelData[0].value) * 100) : 0;
-                const prevPct = i > 0 && funnelData[0].value > 0 ? Math.round((funnelData[i-1].value / funnelData[0].value) * 100) : 100;
-                const dropoff = i > 0 ? prevPct - pct : 0;
+              {funnelData.map((stage, i) => {
+                const allZero  = funnelData.every(d => d.value === 0);
+                const pct      = funnelData[0].value > 0 ? Math.round((stage.value / funnelData[0].value) * 100) : 0;
+                const prevPct  = i > 0 && funnelData[0].value > 0 ? Math.round((funnelData[i-1].value / funnelData[0].value) * 100) : 100;
+                const dropoff  = i > 0 ? prevPct - pct : 0;
+                const isEmpty  = stage.value === 0;
                 return (
                   <div key={stage.name}>
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-medium">{stage.name}</span>
+                      <span className={cn("text-xs font-medium", isEmpty && "text-muted-foreground")}>{stage.name}</span>
                       <div className="flex items-center gap-2">
-                        {i > 0 && dropoff > 0 && <span className="text-[10px] text-red-500 font-medium">−{dropoff}%</span>}
-                        <span className="text-xs tabular-nums font-semibold">{stage.value}</span>
-                        <span className="text-[10px] text-muted-foreground w-8 text-right">{pct}%</span>
+                        
+                        <span className={cn("text-xs tabular-nums font-semibold", isEmpty && "text-muted-foreground")}>{stage.value}</span>
+                        {/* <span className="text-[10px] text-muted-foreground w-8 text-right">{pct}%</span> */}
                       </div>
                     </div>
                     <div className="h-6 rounded-md bg-muted overflow-hidden">
                       <div className="h-full rounded-md transition-all duration-500"
-                        style={{ width: `${Math.max(pct, 4)}%`, background: stage.fill }} />
+                        style={{ width: isEmpty ? "100%" : `${Math.max(pct, 4)}%`, background: isEmpty ? "hsl(var(--muted-foreground) / 0.2)" : stage.fill }} />
                     </div>
                   </div>
                 );
