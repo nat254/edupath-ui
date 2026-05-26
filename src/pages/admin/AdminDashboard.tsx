@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
@@ -186,6 +186,21 @@ const AdminDashboard = () => {
   const uniqueOrgs       = useMemo(() => [...new Set(learners.map(l => l.organization.split(" - ")[0]))], [learners]);
   const uniqueCounties   = useMemo(() => [...new Set(learners.map(l => l.county).filter(Boolean))], [learners]);
   const uniqueCategories = useMemo(() => [...new Set(courses.map(c => c.category))], [courses]);
+
+  const orgOptions = useMemo(() => [
+    { value: "all", label: "All Organizations" },
+    ...uniqueOrgs.map(o => ({ value: o, label: o }))
+  ], [uniqueOrgs]);
+
+  const countyOptions = useMemo(() => [
+    { value: "all", label: "All Counties" },
+    ...uniqueCounties.map(c => ({ value: c, label: c }))
+  ], [uniqueCounties]);
+
+  const categoryOptions = useMemo(() => [
+    { value: "all", label: "All Categories" },
+    ...uniqueCategories.map(c => ({ value: c, label: c }))
+  ], [uniqueCategories]);
 
   const resetFilters = useCallback(() => {
     setFilterOrg("all"); setFilterCounty("all"); setFilterCategory("all");
@@ -400,33 +415,36 @@ const dailyTrend   = analytics.daily;
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Organization</Label>
-                  <Select value={filterOrg} onValueChange={setFilterOrg}>
-                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Organizations</SelectItem>
-                      {uniqueOrgs.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    value={filterOrg}
+                    onValueChange={setFilterOrg}
+                    options={orgOptions}
+                    placeholder="All Organizations"
+                    emptyMessage="No organization found."
+                    triggerClassName="h-8 text-xs"
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">County</Label>
-                  <Select value={filterCounty} onValueChange={setFilterCounty}>
-                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Counties</SelectItem>
-                      {uniqueCounties.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    value={filterCounty}
+                    onValueChange={setFilterCounty}
+                    options={countyOptions}
+                    placeholder="All Counties"
+                    emptyMessage="No county found."
+                    triggerClassName="h-8 text-xs"
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Course Category</Label>
-                  <Select value={filterCategory} onValueChange={setFilterCategory}>
-                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      {uniqueCategories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    value={filterCategory}
+                    onValueChange={setFilterCategory}
+                    options={categoryOptions}
+                    placeholder="All Categories"
+                    emptyMessage="No category found."
+                    triggerClassName="h-8 text-xs"
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">From</Label>

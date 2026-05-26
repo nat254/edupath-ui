@@ -11,13 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
@@ -147,6 +141,16 @@ const ProfilePage = () => {
   const [county, setCounty] = useState(user.county);
   const [infoErrors, setInfoErrors] = useState<Record<string, string>>({});
   const [infoSaving, setInfoSaving] = useState(false);
+
+  const orgOptions = organizations.map((org) => ({
+    value: org.name,
+    label: org.name,
+  }));
+
+  const countyOptions = kenyanCounties.map((c) => ({
+    value: c,
+    label: c,
+  }));
 
   const validateInfo = () => {
     const e: Record<string, string> = {};
@@ -347,24 +351,17 @@ const ProfilePage = () => {
                   <Label className="flex items-center gap-1.5">
                     <Building2 className="h-3.5 w-3.5 text-muted-foreground" /> Organisation
                   </Label>
-                  <Select
+                  <SearchableSelect
                     value={organization}
                     onValueChange={(v) => {
                       setOrganization(v);
                       setInfoErrors((p) => ({ ...p, organization: "" }));
                     }}
-                  >
-                    <SelectTrigger className={cn(infoErrors.organization && "border-destructive")}>
-                      <SelectValue placeholder="Select organisation" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {organizations.map((org) => (
-                        <SelectItem key={org.id} value={org.name}>
-                          {org.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    options={orgOptions}
+                    placeholder="Select organisation"
+                    emptyMessage="No organisation found."
+                    triggerClassName={cn(infoErrors.organization && "border-destructive")}
+                  />
                   {infoErrors.organization && (
                     <p className="text-xs text-destructive">{infoErrors.organization}</p>
                   )}
@@ -375,24 +372,17 @@ const ProfilePage = () => {
                   <Label className="flex items-center gap-1.5">
                     <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> County
                   </Label>
-                  <Select
+                  <SearchableSelect
                     value={county}
                     onValueChange={(v) => {
                       setCounty(v);
                       setInfoErrors((p) => ({ ...p, county: "" }));
                     }}
-                  >
-                    <SelectTrigger className={cn(infoErrors.county && "border-destructive")}>
-                      <SelectValue placeholder="Select county" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {kenyanCounties.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    options={countyOptions}
+                    placeholder="Select county"
+                    emptyMessage="No county found."
+                    triggerClassName={cn(infoErrors.county && "border-destructive")}
+                  />
                   {infoErrors.county && (
                     <p className="text-xs text-destructive">{infoErrors.county}</p>
                   )}

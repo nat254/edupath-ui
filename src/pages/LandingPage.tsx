@@ -144,14 +144,14 @@ const LandingPage = () => {
 
           {/* Heading */}
           <h1
-            className={`text-4xl sm:text-5xl lg:text-6xl font-extrabold text-foreground tracking-tight leading-[1.1] ${heroSection.visible ? "animate-fade-up" : "opacity-0"}`}
+            className={`text-4xl sm:text-5xl lg:text-4xl font-extrabold text-foreground tracking-tight leading-[1.1] ${heroSection.visible ? "animate-fade-up" : "opacity-0"}`}
             style={{ animationDelay: "0.1s" }}
           >
-            Empower Your Team with
+            Empowering Healthcare Professionals on
             <br />
             <span className="relative inline-block">
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary to-accent">
-                Expert Training
+                Digital Health Platforms
               </span>
               <span className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-primary/60 to-accent/60 rounded-full" />
             </span>
@@ -159,11 +159,11 @@ const LandingPage = () => {
 
           {/* Subtitle */}
           <p
-            className={`mt-6 text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto leading-relaxed ${heroSection.visible ? "animate-fade-up" : "opacity-0"}`}
+            className={`mt-6 text-muted-foreground text-base sm:text-sm max-w-2xl mx-auto leading-relaxed ${heroSection.visible ? "animate-fade-up" : "opacity-0"}`}
             style={{ animationDelay: "0.2s" }}
           >
             Access curated courses designed for healthcare professionals.
-            Track progress, earn certifications, and grow your skills.
+            Track progress, and grow your understanding of different platforms.
           </p>
 
           {/* CTA buttons */}
@@ -176,7 +176,7 @@ const LandingPage = () => {
               className="text-base px-8 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:-translate-y-0.5"
               onClick={() => navigate("/register")}
             >
-              Start Learning Free
+              Start Learning
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button
@@ -197,7 +197,7 @@ const LandingPage = () => {
             {[
               { icon: BookOpen, value: courses.length, label: "Courses", sub: "Expert-crafted content" },
               { icon: Users, value: learners.length, label: "Learners", sub: "And growing daily" },
-              { icon: CheckCircle, value: 98, label: "% Satisfaction", sub: "From verified reviews" },
+              // { icon: CheckCircle, value: 98, label: "% Satisfaction", sub: "From verified reviews" },
             ].map((s, i) => (
               <div
                 key={s.label}
@@ -225,7 +225,7 @@ const LandingPage = () => {
           <div className={`text-center mb-12 ${featuresSection.visible ? "animate-fade-up" : "opacity-0"}`}>
             <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Why Choose Training Portal?</h2>
             <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-              Built specifically for healthcare organizations to deliver impactful training
+              Built specifically for healthcare organizations to benefit from impactful training
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -411,17 +411,17 @@ const LandingPage = () => {
         <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-accent/8 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: "2s" }} />
         <div className="max-w-3xl mx-auto px-4 py-20 text-center relative">
           <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-            Ready to Transform Your Training?
+            Ready to Transform Your Learning Experience?
           </h2>
           <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-            Join healthcare professionals already learning on Training Portal. Start your journey today — it&apos;s completely free.
+            Join healthcare professionals already learning on Training Portal. Start your journey today.
           </p>
           <Button
             size="lg"
             className="text-base px-10 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:-translate-y-0.5"
             onClick={() => navigate("/register")}
           >
-            Create Free Account
+            Create An Account
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>

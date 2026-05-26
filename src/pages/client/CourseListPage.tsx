@@ -3,13 +3,7 @@ import { courseStore } from "@/data/courseStore";
 import { enrollmentStore } from "@/data/enrollmentStore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { LayoutGrid, List, Eye, PlayCircle } from "lucide-react";
@@ -90,6 +84,10 @@ const CourseListPage = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const categories = ["All", ...new Set(courses.map((c) => c.category))];
+  const categoryOptions = categories.map((cat) => ({
+    value: cat,
+    label: cat,
+  }));
   const filtered = courses.filter((c) => {
     const matchesSearch = c.title.toLowerCase().includes(search.toLowerCase());
     const matchesCategory =
@@ -144,18 +142,14 @@ const CourseListPage = () => {
             onChange={(e) => setSearch(e.target.value)}
             className="max-w-xs"
           />
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((cat) => (
-                <SelectItem key={cat} value={cat}>
-                  {cat}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            value={selectedCategory}
+            onValueChange={setSelectedCategory}
+            options={categoryOptions}
+            placeholder="Category"
+            emptyMessage="No category found."
+            triggerClassName="w-40"
+          />
         </div>
 
         {/* ── Course grid / list ───────────────────────────────────────── */}

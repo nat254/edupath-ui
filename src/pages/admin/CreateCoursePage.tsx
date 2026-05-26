@@ -7,13 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { toast } from "sonner";
 import {
   Trash2,
@@ -56,6 +50,11 @@ const CreateCoursePage = () => {
 
   const getNames = useCallback(() => categoryStore.getNames(), []);
   const categories = useSyncExternalStore(categoryStore.subscribe, getNames);
+
+  const categoryOptions = categories.map((c) => ({
+    value: c,
+    label: c,
+  }));
 
   const [form, setForm] = useState({
     title: existing?.title ?? "",
@@ -296,21 +295,14 @@ const CreateCoursePage = () => {
               </div>
               <div className="space-y-2">
                 <Label>Category *</Label>
-                <Select
+                <SearchableSelect
                   value={form.category}
                   onValueChange={(v) => setForm((p) => ({ ...p, category: v }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={categoryOptions}
+                  placeholder="Select category"
+                  emptyMessage="No category found."
+                  triggerClassName={cn(errors.category && "border-destructive")}
+                />
                 {errors.category && (
                   <p className="text-destructive text-xs">{errors.category}</p>
                 )}

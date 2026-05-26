@@ -8,9 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose,
 } from "@/components/ui/dialog";
@@ -152,6 +150,28 @@ const LearnersPage = () => {
   }), [learners]);
 
   const uniqueOrgs = useMemo(() => [...new Set(learners.map(l => l.organization.split(" - ")[0]))], [learners]);
+
+  const filterStatusOptions = [
+    { value: "all", label: "All statuses" },
+    { value: "active", label: "Active" },
+    { value: "completed", label: "Completed" },
+    { value: "notstarted", label: "Not started" },
+  ];
+
+  const filterOrgOptions = useMemo(() => [
+    { value: "all", label: "All organizations" },
+    ...uniqueOrgs.map(o => ({ value: o, label: o }))
+  ], [uniqueOrgs]);
+
+  const formOrgOptions = useMemo(() => organizations.map(o => ({
+    value: o.name,
+    label: o.name,
+  })), []);
+
+  const formCountyOptions = useMemo(() => kenyanCounties.map(c => ({
+    value: c,
+    label: c,
+  })), []);
 
   // ── Handlers: form ────────────────────────────────────────────────────────
 
@@ -322,24 +342,24 @@ const LearnersPage = () => {
         </div>
 
         {/* Status filter */}
-        <Select value={filterStatus} onValueChange={v => { setFilterStatus(v as FilterStatus); setPage(1); }}>
-          <SelectTrigger className="h-8 text-xs w-36"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="notstarted">Not started</SelectItem>
-          </SelectContent>
-        </Select>
+        <SearchableSelect
+          value={filterStatus}
+          onValueChange={v => { setFilterStatus(v as FilterStatus); setPage(1); }}
+          options={filterStatusOptions}
+          placeholder="All statuses"
+          emptyMessage="No status found."
+          triggerClassName="h-8 text-xs w-36"
+        />
 
         {/* Org filter */}
-        <Select value={filterOrg} onValueChange={v => { setFilterOrg(v); setPage(1); }}>
-          <SelectTrigger className="h-8 text-xs w-44"><SelectValue placeholder="All organizations" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All organizations</SelectItem>
-            {uniqueOrgs.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <SearchableSelect
+          value={filterOrg}
+          onValueChange={v => { setFilterOrg(v); setPage(1); }}
+          options={filterOrgOptions}
+          placeholder="All organizations"
+          emptyMessage="No organization found."
+          triggerClassName="h-8 text-xs w-44"
+        />
 
         {/* Reset */}
         {hasFilters && (
@@ -419,7 +439,7 @@ const LearnersPage = () => {
                     {label}<SortIcon col={key} sortKey={sortKey} sortDir={sortDir} />
                   </th>
                 ))}
-                <th className="text-left text-xs font-medium text-muted-foreground px-3 py-3 whitespace-nowrap">Rate</th>
+                <th className="text-left text-xs font-medium text-muted-foreground px-3 py-3 whitespace-nowrap">Completion Rate</th>
                 <th className="text-left text-xs font-medium text-muted-foreground px-3 py-3 whitespace-nowrap">Status</th>
                 <th className="w-[110px] px-3 py-3 text-left text-xs font-medium text-muted-foreground">Actions</th>
               </tr>
@@ -590,18 +610,26 @@ const LearnersPage = () => {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Organization *</Label>
-                <Select value={form.organization} onValueChange={v => setForm(p => ({ ...p, organization: v }))}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>{organizations.map(o => <SelectItem key={o.id} value={o.name}>{o.name}</SelectItem>)}</SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={form.organization}
+                  onValueChange={v => setForm(p => ({ ...p, organization: v }))}
+                  options={formOrgOptions}
+                  placeholder="Select Organization"
+                  emptyMessage="No organization found."
+                  triggerClassName={cn("h-8 text-xs", errors.organization && "border-destructive")}
+                />
                 {errors.organization && <p className="text-destructive text-xs">{errors.organization}</p>}
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">County *</Label>
-                <Select value={form.county} onValueChange={v => setForm(p => ({ ...p, county: v }))}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>{kenyanCounties.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={form.county}
+                  onValueChange={v => setForm(p => ({ ...p, county: v }))}
+                  options={formCountyOptions}
+                  placeholder="Select County"
+                  emptyMessage="No county found."
+                  triggerClassName={cn("h-8 text-xs", errors.county && "border-destructive")}
+                />
                 {errors.county && <p className="text-destructive text-xs">{errors.county}</p>}
               </div>
             </div>

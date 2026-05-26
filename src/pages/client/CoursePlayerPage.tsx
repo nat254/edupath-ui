@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import StarRating from "@/components/StarRating";
-import { CheckCircle, XCircle, BookOpen, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, BookOpen, Loader2, FileText, ExternalLink } from "lucide-react";
 
 const CoursePlayerPage = () => {
   const { courseId } = useParams();
@@ -244,6 +244,51 @@ const CoursePlayerPage = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* PDF Material */}
+      {course.pdfUrl && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Course Material (PDF)
+              </CardTitle>
+              <a
+                href={course.pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+              >
+                Open in new tab
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="w-full rounded-lg overflow-hidden border bg-muted/30">
+              <iframe
+                src={course.pdfUrl}
+                title="Course PDF Material"
+                className="w-full border-0"
+                style={{ height: "600px" }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              If the PDF doesn't display above,{" "}
+              <a
+                href={course.pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline font-medium"
+              >
+                click here to download it
+              </a>
+              .
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Quiz */}
       <Card>

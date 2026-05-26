@@ -6,13 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -331,6 +325,30 @@ const CourseFeedbackPage = () => {
   const [ratingFilter, setRatingFilter] = useState("all");
   const [sort, setSort] = useState<SortKey>("newest");
 
+  const courseOptions = [
+    { value: "all", label: "All courses" },
+    ...courses.map((c) => ({ value: c.id, label: c.title })),
+  ];
+
+  const ratingOptions = [
+    { value: "all", label: "All ratings" },
+    ...[5, 4, 3, 2, 1].map((r) => ({
+      value: String(r),
+      label: `${r} Star${r > 1 ? "s" : ""}`,
+      customRender: (
+        <span className="flex items-center gap-1">
+          {"★".repeat(r)}{"☆".repeat(5 - r)} ({r})
+        </span>
+      ),
+    })),
+  ];
+
+  const sortOptions = [
+    { value: "newest", label: "Newest first" },
+    { value: "highest", label: "Highest rating" },
+    { value: "lowest", label: "Lowest rating" },
+  ];
+
   const handleDelete = async (id: string) => {
     try {
       await feedbackStore.remove(id);
@@ -453,46 +471,34 @@ const CourseFeedbackPage = () => {
         </div>
 
         {/* Course filter */}
-        <Select value={courseFilter} onValueChange={setCourseFilter}>
-          <SelectTrigger className="h-9 text-sm w-[180px]">
-            <SelectValue placeholder="All courses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All courses</SelectItem>
-            {courses.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SearchableSelect
+          value={courseFilter}
+          onValueChange={setCourseFilter}
+          options={courseOptions}
+          placeholder="All courses"
+          emptyMessage="No course found."
+          triggerClassName="h-9 text-sm w-[180px]"
+        />
 
         {/* Rating filter */}
-        <Select value={ratingFilter} onValueChange={setRatingFilter}>
-          <SelectTrigger className="h-9 text-sm w-[130px]">
-            <SelectValue placeholder="All ratings" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All ratings</SelectItem>
-            {[5, 4, 3, 2, 1].map((r) => (
-              <SelectItem key={r} value={String(r)}>
-                {"★".repeat(r)}{"☆".repeat(5 - r)} ({r})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SearchableSelect
+          value={ratingFilter}
+          onValueChange={setRatingFilter}
+          options={ratingOptions}
+          placeholder="All ratings"
+          emptyMessage="No rating found."
+          triggerClassName="h-9 text-sm w-[130px]"
+        />
 
         {/* Sort */}
-        <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-          <SelectTrigger className="h-9 text-sm w-[150px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="newest">Newest first</SelectItem>
-            <SelectItem value="highest">Highest rating</SelectItem>
-            <SelectItem value="lowest">Lowest rating</SelectItem>
-          </SelectContent>
-        </Select>
+        <SearchableSelect
+          value={sort}
+          onValueChange={(v) => setSort(v as SortKey)}
+          options={sortOptions}
+          placeholder="Sort"
+          emptyMessage="No option found."
+          triggerClassName="h-9 text-sm w-[150px]"
+        />
       </div>
 
       {/* ── Results count ───────────────────────────────────────────────── */}

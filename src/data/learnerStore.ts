@@ -64,7 +64,7 @@ export const learnerStore = {
   /** Update an existing learner via the backend API */
   async update(id: string, payload: Partial<Omit<Learner, "id">>): Promise<void> {
     const res = await fetch(`${BASE}/learners/${id}`, {
-      method: "PUT",
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });

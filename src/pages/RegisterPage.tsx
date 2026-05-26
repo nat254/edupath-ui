@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import PinInput from "@/components/PinInput";
 import { GraduationCap } from "lucide-react";
 
@@ -18,6 +18,16 @@ const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  const orgOptions = organizations.map((org) => ({
+    value: org.name,
+    label: org.name,
+  }));
+
+  const countyOptions = kenyanCounties.map((c) => ({
+    value: c,
+    label: c,
+  }));
 
   const set = (field: string, value: string) => {
     setForm((p) => ({ ...p, [field]: value }));
@@ -51,30 +61,34 @@ const RegisterPage = () => {
     });
     setLoading(false);
     if (!result.success) {
-      setErrors({ general: result.error! });
+      setErrors({ general: result.error || "Registration failed" });
     } else {
       navigate("/dashboard");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-2 h-12 w-12 rounded-xl bg-primary flex items-center justify-center">
-            <GraduationCap className="h-7 w-7 text-primary-foreground" />
+        <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center mb-2">
+            <div className="p-2 bg-primary/10 rounded-full text-primary">
+              <GraduationCap className="h-6 w-6" />
+            </div>
           </div>
-          <CardTitle className="text-2xl">Create Account</CardTitle>
-          <CardDescription>Register as a learner</CardDescription>
+          <CardTitle className="text-xl">Create Learner Account</CardTitle>
+          <CardDescription>Enter details below to register.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {errors.general && (
-              <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm">{errors.general}</div>
+              <div className="p-3 text-sm bg-destructive/10 text-destructive rounded-md border border-destructive/20 text-center">
+                {errors.general}
+              </div>
             )}
             <div className="space-y-2">
-              <Label>National ID</Label>
-              <Input placeholder="Enter a valid National ID" value={form.nationalId} onChange={(e) => set("nationalId", e.target.value.replace(/\D/g, "").slice(0, 10))} inputMode="numeric" />
+              <Label>National ID / Passport Number</Label>
+              <Input placeholder="e.g. 12345678" value={form.nationalId} onChange={(e) => set("nationalId", e.target.value)} />
               {errors.nationalId && <p className="text-destructive text-xs">{errors.nationalId}</p>}
             </div>
             <div className="space-y-2">
@@ -89,26 +103,24 @@ const RegisterPage = () => {
             </div>
             <div className="space-y-2">
               <Label>Organization</Label>
-              <Select value={form.organization} onValueChange={(v) => set("organization", v)}>
-                <SelectTrigger><SelectValue placeholder="Select organization" /></SelectTrigger>
-                <SelectContent>
-                  {organizations.map((org) => (
-                    <SelectItem key={org.id} value={org.name}>{org.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={form.organization}
+                onValueChange={(v) => set("organization", v)}
+                options={orgOptions}
+                placeholder="Select organization"
+                emptyMessage="No organization found."
+              />
               {errors.organization && <p className="text-destructive text-xs">{errors.organization}</p>}
             </div>
             <div className="space-y-2">
               <Label>County</Label>
-              <Select value={form.county} onValueChange={(v) => set("county", v)}>
-                <SelectTrigger><SelectValue placeholder="Select county" /></SelectTrigger>
-                <SelectContent>
-                  {kenyanCounties.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={form.county}
+                onValueChange={(v) => set("county", v)}
+                options={countyOptions}
+                placeholder="Select county"
+                emptyMessage="No county found."
+              />
               {errors.county && <p className="text-destructive text-xs">{errors.county}</p>}
             </div>
             <PinInput

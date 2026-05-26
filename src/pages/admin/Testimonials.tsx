@@ -4,13 +4,7 @@ import { Testimonial } from "@/data/types";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Badge } from "@/components/ui/badge";
 import {
   Star,
@@ -212,46 +206,60 @@ const TestimonialsFilterBar = ({
   search: string; setSearch: (v: string) => void;
   ratingFilter: string; setRatingFilter: (v: string) => void;
   sort: SortKey; setSort: (v: SortKey) => void;
-}) => (
-  <div className="flex flex-wrap items-center gap-3">
-    {/* Search */}
-    <div className="relative flex-1 min-w-[180px]">
-      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-      <Input
-        placeholder="Search by name or text…"
-        className="pl-8 h-9 text-sm"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
+}) => {
+  const ratingOptions = [
+    { value: "all", label: "All ratings" },
+    ...[5, 4, 3, 2, 1].map((r) => ({
+      value: String(r),
+      label: `${r} Star${r > 1 ? "s" : ""}`,
+      customRender: (
+        <span className="flex items-center gap-1">
+          {"★".repeat(r)}{"☆".repeat(5 - r)} ({r})
+        </span>
+      ),
+    })),
+  ];
+
+  const sortOptions = [
+    { value: "newest", label: "Newest first" },
+    { value: "highest", label: "Highest rating" },
+  ];
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      {/* Search */}
+      <div className="relative flex-1 min-w-[180px]">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Input
+          placeholder="Search by name or text…"
+          className="pl-8 h-9 text-sm"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Rating filter */}
+      <SearchableSelect
+        value={ratingFilter}
+        onValueChange={setRatingFilter}
+        options={ratingOptions}
+        placeholder="All ratings"
+        emptyMessage="No rating found."
+        triggerClassName="h-9 text-sm w-[130px]"
+      />
+
+      {/* Sort */}
+      <SearchableSelect
+        value={sort}
+        onValueChange={(v) => setSort(v as SortKey)}
+        options={sortOptions}
+        placeholder="Sort"
+        emptyMessage="No option found."
+        triggerClassName="h-9 text-sm w-[150px]"
       />
     </div>
-
-    {/* Rating filter */}
-    <Select value={ratingFilter} onValueChange={setRatingFilter}>
-      <SelectTrigger className="h-9 text-sm w-[130px]">
-        <SelectValue placeholder="All ratings" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All ratings</SelectItem>
-        {[5, 4, 3, 2, 1].map((r) => (
-          <SelectItem key={r} value={String(r)}>
-            {"★".repeat(r)}{"☆".repeat(5 - r)} ({r})
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-
-    {/* Sort */}
-    <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-      <SelectTrigger className="h-9 text-sm w-[150px]">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="newest">Newest first</SelectItem>
-        <SelectItem value="highest">Highest rating</SelectItem>
-      </SelectContent>
-    </Select>
-  </div>
-);
+  );
+};
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
