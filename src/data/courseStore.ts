@@ -6,11 +6,8 @@ let courseList: Course[] = [];
 let isLoading = false;
 let listeners: (() => void)[] = [];
 
-function emit() {
-  listeners.forEach((l) => l());
-}
+function emit() { listeners.forEach((l) => l()); }
 
-/** Prepend API origin to relative upload paths */
 function fixUrls(c: Course): Course {
   return {
     ...c,
@@ -22,29 +19,19 @@ function fixUrls(c: Course): Course {
 export const courseStore = {
   subscribe(listener: () => void) {
     listeners.push(listener);
-    return () => {
-      listeners = listeners.filter((l) => l !== listener);
-    };
+    return () => { listeners = listeners.filter((l) => l !== listener); };
   },
+  getAll() { return courseList; },
+  getIsLoading() { return isLoading; },
+  getById(id: string) { return courseList.find((c) => c.id === id) ?? null; },
 
-  getAll() {
-    return courseList;
-  },
-
-  getIsLoading() {
-    return isLoading;
-  },
-
-  getById(id: string) {
-    return courseList.find((c) => c.id === id) ?? null;
-  },
-
-  /** Fetch all courses from the API and notify subscribers */
-  async fetchAll() {
+  /** Fetch courses, optionally filtered by user role for audience visibility */
+  async fetchAll(role?: string) {
     isLoading = true;
     emit();
     try {
-      const res = await fetch(`${API}/courses`);
+      const params = role ? `?role=${role}` : "";
+      const res = await fetch(`${API}/courses${params}`);
       if (!res.ok) throw new Error("Failed to fetch courses");
       const data: Course[] = await res.json();
       courseList = data.map(fixUrls);
@@ -56,12 +43,8 @@ export const courseStore = {
     }
   },
 
-  /** Create a course via multipart FormData */
   async add(formData: FormData): Promise<Course> {
-    const res = await fetch(`${API}/courses`, {
-      method: "POST",
-      body: formData,
-    });
+    const res = await fetch(`${API}/courses`, { method: "POST", body: formData });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: "Server error" }));
       throw new Error(err.error);
@@ -73,12 +56,8 @@ export const courseStore = {
     return fixed;
   },
 
-  /** Update a course via multipart FormData */
   async update(id: string, formData: FormData): Promise<Course> {
-    const res = await fetch(`${API}/courses/${id}`, {
-      method: "PATCH",
-      body: formData,
-    });
+    const res = await fetch(`${API}/courses/${id}`, { method: "PATCH", body: formData });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: "Server error" }));
       throw new Error(err.error);
@@ -90,11 +69,8 @@ export const courseStore = {
     return fixed;
   },
 
-  /** Delete a course by id */
   async remove(id: string): Promise<void> {
-    const res = await fetch(`${API}/courses/${id}`, {
-      method: "DELETE",
-    });
+    const res = await fetch(`${API}/courses/${id}`, { method: "DELETE" });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: "Server error" }));
       throw new Error(err.error);

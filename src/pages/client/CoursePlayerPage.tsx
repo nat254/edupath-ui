@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useSyncExternalStore } from "react";
+import { useState, useRef, useEffect, useSyncExternalStore, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { courseStore } from "@/data/courseStore";
 import { enrollmentStore } from "@/data/enrollmentStore";
@@ -12,6 +12,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import StarRating from "@/components/StarRating";
 import { CheckCircle, XCircle, BookOpen, Loader2, FileText, ExternalLink } from "lucide-react";
+
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const CoursePlayerPage = () => {
   const { courseId } = useParams();
@@ -27,31 +29,45 @@ const CoursePlayerPage = () => {
 
   const courses = useSyncExternalStore(courseStore.subscribe, courseStore.getAll);
   const isLoading = useSyncExternalStore(courseStore.subscribe, courseStore.getIsLoading);
+  // Subscribe to enrollment store so that state syncs when fetchMyEnrollments resolves
+  useSyncExternalStore(enrollmentStore.subscribe, enrollmentStore.getSnapshot);
   const course = courses.find((c) => c.id === courseId) ?? null;
 
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // ── Local state ──────────────────────────────────────────────────────────
-  // Initialise from enrollment DB state so "Review" shows correct status
-  const enrollment = course && userId
-    ? enrollmentStore.getEnrollment(userId, course.id)
-    : null;
+  // ── Enrollment (reactive) ─────────────────────────────────────────────────
+  const enrollment = useMemo(
+    () => (course && userId ? enrollmentStore.getEnrollment(userId, course.id) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [course?.id, userId, enrollmentStore.getSnapshot()],
+  );
   const alreadyComplete = enrollment?.status === "complete";
 
+  // ── Local state ──────────────────────────────────────────────────────────
   const [videoComplete, setVideoComplete] = useState(alreadyComplete);
-  const [videoProgress, setVideoProgress] = useState(
-    alreadyComplete ? 100 : 0
-  );
+  const [videoProgress, setVideoProgress] = useState(alreadyComplete ? 100 : 0);
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number[]>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(alreadyComplete);
-  // Store the quiz score — default to enrollment progress if already complete
-  const [quizScore, setQuizScore] = useState(
-    alreadyComplete ? (enrollment?.progress ?? 0) : 0
+  // null = no score recorded (old completion or not yet submitted)
+  const [quizScore, setQuizScore] = useState<number | null>(
+    alreadyComplete ? (enrollment?.quizScore ?? null) : null,
   );
   const [rating, setRating] = useState(0);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+
+  // ── Sync enrollment when it loads asynchronously (hard-refresh / direct URL) ──
+  const hasSynced = useRef(false);
+  useEffect(() => {
+    if (!hasSynced.current && enrollment?.status === "complete") {
+      hasSynced.current = true;
+      setVideoComplete(true);
+      setVideoProgress(100);
+      setQuizSubmitted(true);
+      setQuizScore(enrollment.quizScore ?? null);
+    }
+  }, [enrollment]);
 
   // ── Guard: loading ──────────────────────────────────────────────────────
   if (isLoading && !course) {
@@ -132,7 +148,19 @@ const CoursePlayerPage = () => {
     }
   };
 
-  // ── Quiz handler ─────────────────────────────────────────────────────────
+  // ── Quiz handlers ─────────────────────────────────────────────────────────
+  const saveQuizAttempt = async (score: number) => {
+    try {
+      await fetch(`${BASE}/quiz-attempts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, courseId: course.id, score }),
+      });
+    } catch (err) {
+      console.error("Failed to save quiz attempt:", err);
+    }
+  };
+
   const handleQuizSubmit = () => {
     let correct = 0;
     course.quiz.forEach((q) => {
@@ -149,13 +177,23 @@ const CoursePlayerPage = () => {
     const score = Math.round((correct / course.quiz.length) * 100);
     setQuizScore(score);
     setQuizSubmitted(true);
-    toast.success(`Quiz completed! Score: ${score}%`);
+    toast.success(`Quiz submitted! Score: ${score}%`);
 
-    if (userId && videoComplete) {
-      void enrollmentStore.updateProgress(userId, course.id, 100);
-    } else if (userId) {
-      void enrollmentStore.updateProgress(userId, course.id, 50);
+    if (userId) {
+      // Persist this attempt to the attempts log (always)
+      void saveQuizAttempt(score);
+
+      // Only update enrollment progress on the first completion — retakes keep progress = 100
+      if (!alreadyComplete) {
+        void enrollmentStore.updateProgress(userId, course.id, videoComplete ? 100 : 50, score);
+      }
     }
+  };
+
+  const handleRetake = () => {
+    setQuizAnswers({});
+    setQuizSubmitted(false);
+    setQuizScore(null);
   };
 
   // ── Feedback handler ─────────────────────────────────────────────────────
@@ -377,14 +415,37 @@ const CoursePlayerPage = () => {
             >
               Submit Quiz
             </Button>
+          ) : quizScore === null ? (
+            // Course was previously completed but score wasn't recorded (pre-feature data)
+            <div className="p-5 rounded-xl border-2 text-center space-y-2 bg-muted/50 border-border">
+              <CheckCircle className="h-9 w-9 text-muted-foreground mx-auto" />
+              <p className="text-sm font-semibold">Quiz previously completed</p>
+              <p className="text-xs text-muted-foreground">Score was not recorded for this attempt.</p>
+              <Button size="sm" variant="outline" onClick={handleRetake} className="mt-1">
+                Retake Quiz
+              </Button>
+            </div>
           ) : (
-            <div className="p-4 rounded-lg bg-muted text-center space-y-1">
-              <p className="text-lg font-bold">Score: {quizScore}%</p>
-              <p className="text-sm text-muted-foreground">
-                {quizScore >= 70
-                  ? "Well done! Course complete."
-                  : "Keep studying — you can retake the quiz."}
+            <div className={`p-5 rounded-xl border-2 text-center space-y-2 ${
+              quizScore >= 70
+                ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-800"
+                : "bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800"
+            }`}>
+              {quizScore >= 70
+                ? <CheckCircle className="h-9 w-9 text-emerald-600 mx-auto" />
+                : <XCircle className="h-9 w-9 text-amber-600 mx-auto" />}
+              <p className={`text-3xl font-bold tabular-nums ${quizScore >= 70 ? "text-emerald-600" : "text-amber-600"}`}>
+                {quizScore}%
               </p>
+              <p className="text-sm font-semibold">
+                {quizScore >= 70 ? "Passed — great work!" : "Not quite yet — review the material and try again."}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {Math.round((quizScore / 100) * course.quiz.length)} of {course.quiz.length} correct
+              </p>
+              <Button size="sm" variant="outline" onClick={handleRetake} className="mt-1">
+                Retake Quiz
+              </Button>
             </div>
           )}
         </CardContent>

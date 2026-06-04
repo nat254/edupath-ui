@@ -1,18 +1,36 @@
-import { useState, useMemo, useEffect, useSyncExternalStore, useRef } from "react";
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useSyncExternalStore,
+  useRef,
+} from "react";
 import { useNavigate } from "react-router-dom";
 import { courseStore } from "@/data/courseStore";
-import { learnerStore } from "@/data/learnerStore";
+import { userStore } from "@/data/userStore";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-  Search, BookOpen, Users, ArrowRight, Star, Quote,
-  GraduationCap, CheckCircle, Sparkles, ChevronRight,
+  Search,
+  BookOpen,
+  Users,
+  ArrowRight,
+  Star,
+  Quote,
+  GraduationCap,
+  CheckCircle,
+  Sparkles,
+  ChevronRight,
+  Shield,
+  Zap,
+  TrendingUp,
+  ClipboardCheck,
 } from "lucide-react";
 import { testimonialStore } from "@/data/testimonialStore";
 
-/* ─── Intersection-Observer hook for scroll-triggered animations ─── */
+/* ─── Intersection-Observer hook ─── */
 function useInView(threshold = 0.15) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -20,7 +38,12 @@ function useInView(threshold = 0.15) {
     const el = ref.current;
     if (!el) return;
     const obs = new IntersectionObserver(
-      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      ([e]) => {
+        if (e.isIntersecting) {
+          setVisible(true);
+          obs.disconnect();
+        }
+      },
       { threshold },
     );
     obs.observe(el);
@@ -29,8 +52,14 @@ function useInView(threshold = 0.15) {
   return { ref, visible };
 }
 
-/* ─── Animated counter ────────────────────────────────────────────── */
-function AnimatedCount({ target, duration = 1200 }: { target: number; duration?: number }) {
+/* ─── Animated counter ─── */
+function AnimatedCount({
+  target,
+  duration = 1400,
+}: {
+  target: number;
+  duration?: number;
+}) {
   const [count, setCount] = useState(0);
   const { ref, visible } = useInView();
   useEffect(() => {
@@ -39,228 +68,506 @@ function AnimatedCount({ target, duration = 1200 }: { target: number; duration?:
     const step = Math.ceil(target / (duration / 16));
     const id = setInterval(() => {
       start += step;
-      if (start >= target) { setCount(target); clearInterval(id); }
-      else setCount(start);
+      if (start >= target) {
+        setCount(target);
+        clearInterval(id);
+      } else setCount(start);
     }, 16);
     return () => clearInterval(id);
   }, [visible, target, duration]);
-  return <span ref={ref}>{count}</span>;
+  return <span ref={ref}>{count.toLocaleString()}</span>;
+}
+
+/* ─── Scroll progress bar ─── */
+function ScrollProgress() {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const scrolled = window.scrollY;
+      const total = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(total > 0 ? (scrolled / total) * 100 : 0);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return (
+    <div className="fixed top-0 left-0 right-0 z-[60] h-0.5 bg-transparent">
+      <div
+        className="h-full bg-primary transition-all duration-75"
+        style={{ width: `${progress}%` }}
+      />
+    </div>
+  );
 }
 
 const LandingPage = () => {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
 
-  // Fetch data from API on mount & subscribe reactively
   useEffect(() => {
     courseStore.fetchAll();
-    learnerStore.fetchAll();
+    userStore.fetchAll("healthcare_provider");
     testimonialStore.fetchApproved();
   }, []);
 
-  const testimonials = useSyncExternalStore(testimonialStore.subscribe, testimonialStore.getAll);
-  const courses = useSyncExternalStore(courseStore.subscribe, courseStore.getAll);
-  const learners = useSyncExternalStore(learnerStore.subscribe, learnerStore.getAll);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
-  const allCategories = useMemo(() => {
-    const cats = Array.from(new Set(courses.map((c: { category: string }) => c.category)));
-    return ["All", ...cats];
-  }, [courses]);
+  const testimonials = useSyncExternalStore(
+    testimonialStore.subscribe,
+    testimonialStore.getAll,
+  );
+  const courses = useSyncExternalStore(
+    courseStore.subscribe,
+    courseStore.getAll,
+  );
+  const learners = useSyncExternalStore(userStore.subscribe, userStore.getAll);
 
-  const filtered = courses.filter((c) => {
-    const matchesSearch =
-      c.title.toLowerCase().includes(search.toLowerCase()) ||
-      c.category.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = activeCategory === "All" || c.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
+  // const allCategories = useMemo(() => {
+  //   const cats = Array.from(
+  //     new Set(courses.map((c: { category: string }) => c.category)),
+  //   );
+  //   return ["All", ...cats];
+  // }, [courses]);
 
-  // Scroll-based section visibility
-  const heroSection = useInView(0.1);
+  // const filtered = courses.filter((c) => {
+  //   const matchesSearch =
+  //     c.title.toLowerCase().includes(search.toLowerCase()) ||
+  //     c.category.toLowerCase().includes(search.toLowerCase());
+  //   const matchesCategory =
+  //     activeCategory === "All" || c.category === activeCategory;
+  //   return matchesSearch && matchesCategory;
+  // });
+
+  const heroSection = useInView(0.05);
   const catalogSection = useInView(0.05);
   const testimonialsSection = useInView(0.1);
   const featuresSection = useInView(0.1);
+  const statsSection = useInView(0.1);
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* ═══════════════════ HEADER ═══════════════════ */}
-      <header className="border-b border-border/60 bg-card/70 backdrop-blur-md sticky top-0 z-50 transition-all duration-300">
-        <div className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-            <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
-              <GraduationCap className="h-5 w-5 text-primary group-hover:scale-110 transition-transform duration-300" />
+    <div className="min-h-screen bg-white overflow-x-hidden">
+      <ScrollProgress />
+
+      {/* ══════════════════ HEADER ══════════════════ */}
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+          scrolled
+            ? "bg-white/90 backdrop-blur-xl border-b border-border shadow-sm"
+            : "bg-transparent"
+        }`}
+      >
+        <div className="max-w-6xl mx-auto grid grid-cols-3 items-center px-6 py-3">
+          {/* Left — logo */}
+          <div
+            className="flex items-center gap-2.5 group cursor-pointer"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          >
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-md shadow-primary/30 group-hover:shadow-lg group-hover:shadow-primary/40 transition-all duration-300">
+              <GraduationCap className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="text-lg font-bold text-foreground tracking-tight">
-              Training<span className="text-primary">Portal</span>
+            <span className="text-base font-bold text-foreground tracking-tight">
+              Training<span className="text-primary"> Portal</span>
             </span>
           </div>
-          <div className="flex gap-2">
+
+          {/* Center — nav */}
+          <nav className="hidden md:flex items-center justify-center gap-3">
+            {["Home", "Features", "Testimonials"].map((item) => (
+              <button
+                key={item}
+                className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:underline decoration-wavy decoration-primary transition-all duration-200"
+                onClick={() =>
+                  document
+                    .getElementById(item.toLowerCase())
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+              >
+                {item}
+              </button>
+            ))}
+          </nav>
+
+          {/* Right — actions */}
+          <div className="flex items-center justify-end gap-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              className="hover:bg-primary/5 hover:text-primary transition-colors duration-200"
+              className="text-sm rounded-sm text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-primary hover:-translate-y-px transition-all duration-300"
               onClick={() => navigate("/login")}
             >
-              Log in
+              Sign in
             </Button>
             <Button
               size="sm"
-              className="shadow-md shadow-primary/25 hover:shadow-lg hover:shadow-primary/30 transition-all duration-300 hover:-translate-y-0.5"
-              onClick={() => navigate("/register")}
+              className="text-sm rounded-sm bg-primary text-primary-foreground shadow-md shadow-primary/25 hover:shadow-lg hover:shadow-primary/30 hover:-translate-y-px transition-all duration-300"
+              onClick={() => navigate("/login")}
             >
-              Get Started
-              <ChevronRight className="ml-1 h-4 w-4" />
+              Get started
+              <ChevronRight className="ml-0.5 h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
       </header>
 
-      {/* ═══════════════════ HERO ═══════════════════ */}
-      <section ref={heroSection.ref} className="relative overflow-hidden">
-        {/* Animated gradient background */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-accent/8" />
-          <div className="absolute top-20 left-10 w-72 h-72 bg-primary/5 rounded-full blur-3xl animate-pulse-glow" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-accent/5 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: "2s" }} />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/3 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: "1s" }} />
+      {/* ══════════════════ HERO ══════════════════ */}
+      <section
+        id="home"
+        ref={heroSection.ref}
+        className="relative min-h-screen flex items-center"
+      >
+        {/* Layered background */}
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-15%,hsl(var(--primary)/0.08),transparent)]" />
+          {/* Dot grid */}
+          <div
+            className="absolute inset-0 opacity-[0.045]"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle, hsl(var(--foreground)) 1px, transparent 1px)",
+              backgroundSize: "28px 28px",
+            }}
+          />
         </div>
 
-        {/* Subtle grid pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: "radial-gradient(circle, hsl(var(--foreground)) 1px, transparent 1px)",
-            backgroundSize: "32px 32px",
-          }}
-        />
-
-        <div className="max-w-6xl mx-auto px-4 py-12 sm:py-20 text-center relative">
-          {/* Badge */}
-          <div className={`inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 mb-6 ${heroSection.visible ? "animate-fade-up" : "opacity-0"}`}>
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <span className="text-xs font-medium text-primary">Healthcare Training Platform</span>
-          </div>
-
-          {/* Heading */}
-          <h1
-            className={`text-4xl sm:text-5xl lg:text-4xl font-extrabold text-foreground tracking-tight leading-[1.1] ${heroSection.visible ? "animate-fade-up" : "opacity-0"}`}
-            style={{ animationDelay: "0.1s" }}
-          >
-            Empowering Healthcare Professionals on
-            <br />
-            <span className="relative inline-block">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary to-accent">
-                Digital Health Platforms
+        <div className="max-w-6xl mx-auto px-6 pt-28 pb-20 w-full">
+          <div className="max-w-4xl mx-auto text-center">
+            {/* Eyebrow */}
+            <div
+              className={`inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-4 py-1.5 mb-8 transition-all duration-700 ${
+                heroSection.visible
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-4"
+              }`}
+            >
+              <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                Healthcare Training Platform
               </span>
-              <span className="absolute -bottom-1 left-0 w-full h-1 bg-gradient-to-r from-primary/60 to-accent/60 rounded-full" />
-            </span>
-          </h1>
+            </div>
 
-          {/* Subtitle */}
-          <p
-            className={`mt-6 text-muted-foreground text-base sm:text-sm max-w-2xl mx-auto leading-relaxed ${heroSection.visible ? "animate-fade-up" : "opacity-0"}`}
-            style={{ animationDelay: "0.2s" }}
-          >
-            Access curated courses designed for healthcare professionals.
-            Track progress, and grow your understanding of different platforms.
-          </p>
+            {/* Headline — tighter, bolder */}
+            <h1
+              className={`text-4xl sm:text-5xl lg:text-6xl font-black text-foreground tracking-tight leading-[1.05] mb-6 transition-all duration-700 delay-100 ${
+                heroSection.visible
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-6"
+              }`}
+            >
+              Advance
+              <br />
+              <span className="relative">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-teal-400 to-green-400">
+                  Digital Health
+                </span>
+                {/* Underline accent */}
+                <svg
+                  className="absolute -bottom-1 left-0 w-full"
+                  viewBox="0 0 300 12"
+                  fill="none"
+                  preserveAspectRatio="none"
+                >
+                  <path
+                    d="M2 9 Q75 2 150 6 Q225 10 298 4"
+                    stroke="hsl(var(--primary))"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    opacity="0.4"
+                  />
+                </svg>
+              </span>{" "}
+              knowledge, one course at a time
+            </h1>
 
-          {/* CTA buttons */}
-          <div
-            className={`mt-8 flex flex-wrap justify-center gap-4 ${heroSection.visible ? "animate-fade-up" : "opacity-0"}`}
-            style={{ animationDelay: "0.3s" }}
-          >
-            <Button
-              size="lg"
-              className="text-base px-8 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:-translate-y-0.5"
-              onClick={() => navigate("/register")}
+            {/* Sub */}
+            <p
+              className={`text-md sm:text-sm text-muted-foreground max-w-xl mx-auto leading-relaxed mb-10 transition-all duration-700 delay-200 ${
+                heroSection.visible
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-4"
+              }`}
             >
-              Start Learning
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-base px-8 hover:bg-primary/5 hover:text-primary transition-all duration-300 hover:-translate-y-0.5"
-              onClick={() => document.getElementById("courses")?.scrollIntoView({ behavior: "smooth" })}
+              Curated courses built for healthcare professionals. Track
+              progress, and grow your digital health expertise at your own pace,
+              all in one place.
+            </p>
+
+            {/* CTAs */}
+            <div
+              className={`flex flex-wrap justify-center gap-3 mb-16 transition-all duration-700 delay-300 ${
+                heroSection.visible
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-4"
+              }`}
             >
-              Browse Courses
-            </Button>
+              <Button
+                size="lg"
+                className="h-12 px-8 text-base bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300"
+                onClick={() => navigate("/login")}
+              >
+                Start for free
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-12 px-8 text-base border-border/60 hover:border-primary/40 hover:bg-primary/5 hover:text-primary hover:-translate-y-0.5 transition-all duration-300"
+                // onClick={() =>
+                //   document
+                //     .getElementById("courses")
+                //     ?.scrollIntoView({ behavior: "smooth" })
+                // }
+                onClick={() => navigate("/login")}
+              >
+              <BookOpen className="mr-2 h-4 w-4" />
+                Browse courses
+              </Button>
+            </div>
+
+            {/* Trust strip */}
+            <p
+              className={`text-xs text-muted-foreground/60 tracking-wide uppercase mb-5 transition-all duration-700 delay-400 ${
+                heroSection.visible ? "opacity-100" : "opacity-0"
+              }`}
+            >
+              Trusted by healthcare organizations
+            </p>
+            <div
+              className={`flex flex-wrap justify-center gap-6 transition-all duration-700 delay-[450ms] ${
+                heroSection.visible
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-2"
+              }`}
+            >
+              {["Hospitals", "Clinics", "Health Systems", "NGOs"].map((org) => (
+                <span
+                  key={org}
+                  className="text-sm font-semibold text-muted-foreground/40 tracking-wide"
+                >
+                  {org}
+                </span>
+              ))}
+            </div>
           </div>
+        </div>
 
-          {/* Stats */}
-          <div
-            className={`mt-14 flex flex-wrap justify-center gap-8 ${heroSection.visible ? "animate-fade-up" : "opacity-0"}`}
-            style={{ animationDelay: "0.45s" }}
-          >
+        {/* Bottom fade */}
+        <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent -z-10" />
+      </section>
+
+      {/* ══════════════════ STATS BAR ══════════════════ */}
+      <section
+        ref={statsSection.ref}
+        className="border-y border-border bg-muted/40"
+      >
+        <div className="max-w-6xl mx-auto px-6 py-10">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
             {[
-              { icon: BookOpen, value: courses.length, label: "Courses", sub: "Expert-crafted content" },
-              { icon: Users, value: learners.length, label: "Learners", sub: "And growing daily" },
-              // { icon: CheckCircle, value: 98, label: "% Satisfaction", sub: "From verified reviews" },
+              {
+                value: courses.length,
+                suffix: "+",
+                label: "Courses available",
+                icon: BookOpen,
+              },
+              {
+                value: learners.length,
+                suffix: "+",
+                label: "Active learners",
+                icon: Users,
+              },
+              {
+                value: 98,
+                suffix: "%",
+                label: "Satisfaction rate",
+                icon: Star,
+              },
+              { value: 24, suffix: "/7", label: "Platform access", icon: Zap },
             ].map((s, i) => (
               <div
                 key={s.label}
-                className="group flex items-center gap-4 bg-card/80 backdrop-blur-sm border border-border/60 rounded-2xl px-6 py-4 shadow-sm hover:shadow-md hover:border-primary/30 hover:-translate-y-1 transition-all duration-300"
-                style={{ animationDelay: `${0.5 + i * 0.1}s` }}
+                className={`text-center transition-all duration-700 ${
+                  statsSection.visible
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-4"
+                }`}
+                style={{ transitionDelay: `${i * 80}ms` }}
               >
-                <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/15 transition-colors duration-300">
-                  <s.icon className="h-5 w-5 text-primary" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xl font-bold text-foreground">
-                    <AnimatedCount target={s.value} />{s.label === "% Satisfaction" ? "%" : "+"} <span className="text-sm font-semibold text-muted-foreground">{s.label === "% Satisfaction" ? "Satisfaction" : s.label}</span>
-                  </p>
-                  <p className="text-xs text-muted-foreground">{s.sub}</p>
-                </div>
+                <p className="text-3xl sm:text-4xl font-black text-foreground tabular-nums">
+                  <AnimatedCount target={s.value} />
+                  {s.suffix}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1 font-medium">
+                  {s.label}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ═══════════════════ FEATURES ═══════════════════ */}
-      <section ref={featuresSection.ref} className="border-t border-border/50 bg-gradient-to-b from-muted/30 to-background">
-        <div className="max-w-6xl mx-auto px-4 py-16">
-          <div className={`text-center mb-12 ${featuresSection.visible ? "animate-fade-up" : "opacity-0"}`}>
-            <h2 className="text-2xl sm:text-3xl font-bold text-foreground">Why Choose Training Portal?</h2>
-            <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-              Built specifically for healthcare organizations to benefit from impactful training
+      {/* ══════════════════ FEATURES ══════════════════ */}
+      <section
+        id="features"
+        ref={featuresSection.ref}
+        className="py-16 sm:py-24 px-4 sm:px-6"
+      >
+        <div className="max-w-6xl mx-auto">
+          <div
+            className={`max-w-2xl mb-10 sm:mb-16 transition-all duration-700 ${
+              featuresSection.visible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-4"
+            }`}
+          >
+            <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">
+              Why Training Portal
             </p>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground tracking-tight leading-tight">
+              Everything your team needs to learn, fast
+            </h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[
               {
                 icon: BookOpen,
-                title: "Expert-Crafted Courses",
-                desc: "Professionally designed curriculum tailored for healthcare professionals at every level.",
-                color: "primary",
+                tag: "Content",
+                title: "Expert-crafted curriculum",
+                desc: "Professionally designed modules tailored for healthcare professionals at every level — from nurses to CMOs.",
+                accent: "primary",
               },
               {
-                icon: CheckCircle,
-                title: "Track Your Progress",
-                desc: "Real-time dashboards to monitor completion, scores, and certifications across your team.",
-                color: "accent",
+                icon: TrendingUp,
+                tag: "Analytics",
+                title: "Real-time progress tracking",
+                desc: "Monitor completion rates, quiz scores, and certification status across your entire team from one dashboard.",
+                accent: "accent",
               },
               {
-                icon: GraduationCap,
-                title: "Earn Certifications",
-                desc: "Receive verifiable certificates upon course completion to advance your career.",
-                color: "primary",
+                icon: ClipboardCheck,
+                tag: "Assessments",
+                title: "Knowledge checks built in",
+                desc: "Every course includes quizzes to reinforce understanding and help learners measure how much they've retained.",
+                accent: "primary",
               },
             ].map((f, i) => (
               <div
                 key={f.title}
-                className={`group relative rounded-2xl border border-border/60 bg-card p-6 hover:shadow-lg hover:border-primary/30 hover:-translate-y-1 transition-all duration-300 ${featuresSection.visible ? "animate-fade-up" : "opacity-0"}`}
-                style={{ animationDelay: `${0.1 + i * 0.15}s` }}
+                className={`group relative p-5 sm:p-7 rounded-2xl border border-border/50 bg-card hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 ${
+                  featuresSection.visible
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-6"
+                }`}
+                style={{ transitionDelay: `${100 + i * 120}ms` }}
               >
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                {/* Hover tint */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/4 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
                 <div className="relative">
-                  <div className={`h-12 w-12 rounded-xl flex items-center justify-center mb-4 ${f.color === "accent" ? "bg-accent/10" : "bg-primary/10"} group-hover:scale-110 transition-transform duration-300`}>
-                    <f.icon className={`h-6 w-6 ${f.color === "accent" ? "text-accent" : "text-primary"}`} />
+                  <div className="flex items-center gap-2 mb-4 sm:mb-5">
+                    <div
+                      className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center bg-primary/10
+                      group-hover:scale-110 transition-transform duration-300"
+                    >
+                      <f.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                    </div>
+                    <span
+                      className="text-xs font-semibold uppercase tracking-wider 
+                      text-primary/70"
+                    >
+                      {f.tag}
+                    </span>
                   </div>
-                  <h3 className="font-semibold text-foreground mb-2">{f.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
+                  <h3 className="text-base font-semibold text-foreground mb-2 leading-snug">
+                    {f.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {f.desc}
+                  </p>
+                </div>
+
+                {/* Subtle number */}
+                <span className="absolute top-4 right-5 sm:top-5 sm:right-6 text-5xl font-black text-foreground/[0.04] select-none group-hover:text-primary/[0.06] transition-colors duration-300">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════ TESTIMONIALS ══════════════════ */}
+      <section
+        id="testimonials"
+        ref={testimonialsSection.ref}
+        className="py-24 px-6 border-t border-border"
+      >
+        <div className="max-w-6xl mx-auto">
+          <div
+            className={`text-center mb-14 transition-all duration-700 ${
+              testimonialsSection.visible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-4"
+            }`}
+          >
+            <p className="text-xs font-semibold text-primary uppercase tracking-widest mb-3">
+              Social proof
+            </p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground tracking-tight">
+              Loved by healthcare professionals
+            </h2>
+            <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto">
+              Real feedback from learners across hospitals, clinics, and health
+              systems
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {testimonials.map((t, i) => (
+              <div
+                key={t.name}
+                className={`group relative p-6 rounded-2xl border border-border/50 bg-card hover:border-primary/25 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300 ${
+                  testimonialsSection.visible
+                    ? "opacity-100 translate-y-0"
+                    : "opacity-0 translate-y-6"
+                }`}
+                style={{ transitionDelay: `${100 + i * 100}ms` }}
+              >
+                {/* Large decorative quote */}
+                <Quote className="absolute top-4 right-5 h-9 w-9 text-primary/8 group-hover:text-primary/12 transition-colors duration-300" />
+
+                <div className="flex gap-0.5 mb-4">
+                  {Array.from({ length: 5 }).map((_, idx) => (
+                    <Star
+                      key={idx}
+                      className={`h-3.5 w-3.5 ${
+                        idx < t.rating
+                          ? "text-amber-400 fill-amber-400"
+                          : "text-border"
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                <p className="text-sm text-foreground leading-relaxed mb-5 italic relative">
+                  "{t.text}"
+                </p>
+
+                <div className="flex items-center gap-3 pt-4 border-t border-border/40">
+                  <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs flex-shrink-0">
+                    {t.name.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground leading-none mb-0.5">
+                      {t.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{t.role}</p>
+                  </div>
                 </div>
               </div>
             ))}
@@ -268,175 +575,107 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* ═══════════════════ COURSE CATALOG ═══════════════════ */}
-      <section ref={catalogSection.ref} id="courses" className="max-w-6xl mx-auto px-4 py-16">
-        <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 ${catalogSection.visible ? "animate-fade-up" : "opacity-0"}`}>
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-              Explore Courses
-            </h2>
-            <p className="text-sm text-muted-foreground mt-1">Click on a course to get started</p>
-          </div>
-          <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search courses..."
-              className="pl-9 bg-card border-border/60 focus:border-primary/40 transition-colors duration-200"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+      {/* ══════════════════ CTA SECTION ══════════════════ */}
+      <section className="py-24 px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="relative overflow-hidden rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/6 via-primary/4 to-primary/6 p-10 sm:p-16 text-center">
+            {/* Background pattern */}
+            <div
+              className="absolute inset-0 opacity-[0.04]"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle, hsl(var(--primary)) 1px, transparent 1px)",
+                backgroundSize: "24px 24px",
+              }}
             />
-          </div>
-        </div>
+            <div className="absolute top-0 left-1/4 w-72 h-72 bg-primary/8 rounded-full blur-3xl -translate-y-1/2" />
 
-        {/* Category filters */}
-        <div className={`flex flex-wrap gap-2 mb-8 ${catalogSection.visible ? "animate-fade-up" : "opacity-0"}`} style={{ animationDelay: "0.1s" }}>
-          {allCategories.map((cat) => (
-            <Button
-              key={cat}
-              variant={activeCategory === cat ? "default" : "outline"}
-              size="sm"
-              className={`rounded-full text-xs transition-all duration-200 ${
-                activeCategory === cat
-                  ? "shadow-md shadow-primary/20"
-                  : "hover:bg-primary/5 hover:border-primary/30"
-              }`}
-              onClick={() => setActiveCategory(cat)}
-            >
-              {cat}
-            </Button>
-          ))}
-        </div>
+            <div className="relative">
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/8 px-4 py-1.5 mb-6">
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                  Join today
+                </span>
+              </div>
 
-        {/* Course grid */}
-        {filtered.length === 0 ? (
-          <div className="text-center py-20 text-muted-foreground">
-            <Search className="h-12 w-12 mx-auto mb-4 text-muted-foreground/40" />
-            <p className="text-lg font-medium">No courses found</p>
-            <p className="text-sm mt-1">Try adjusting your search or filters</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((c, i) => (
-              <Card
-                key={c.id}
-                className={`group cursor-pointer border-border/60 hover:shadow-xl hover:border-primary/30 hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden ${catalogSection.visible ? "animate-scale-in" : "opacity-0"}`}
-                style={{ animationDelay: `${0.1 + i * 0.08}s` }}
-                onClick={() => navigate("/login")}
-              >
-                {/* Cover image with overlay */}
-                <div className="relative w-full h-40 overflow-hidden bg-muted">
-                  {c.coverImage ? (
-                    <img
-                      src={c.coverImage}
-                      alt={c.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-accent/10">
-                      <BookOpen className="h-10 w-10 text-primary/30" />
+              <h2 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight leading-tight mb-4">
+                Ready to transform how your
+                <br />
+                learn?
+              </h2>
+              <p className="text-base text-muted-foreground max-w-md mx-auto mb-10 leading-relaxed">
+                Join healthcare professionals already learning on Training
+                Portal. Create an account in under a minute.
+              </p>
+
+              <div className="flex flex-wrap justify-center gap-3">
+                <Button
+                  size="lg"
+                  className="h-12 px-10 text-base bg-primary text-primary-foreground shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300"
+                  onClick={() => navigate("/register")}
+                >
+                  Create account
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 px-8 text-base border-border/60 hover:border-primary/40 hover:bg-primary/5 hover:text-primary hover:-translate-y-0.5 transition-all duration-300"
+                  onClick={() => navigate("/login")}
+                >
+                  Sign in
+                </Button>
+              </div>
+
+              {/* Micro-social proof */}
+              <div className="mt-8 flex items-center justify-center gap-3">
+                <div className="flex -space-x-2">
+                  {["A", "B", "C", "D"].map((letter) => (
+                    <div
+                      key={letter}
+                      className="h-7 w-7 rounded-full bg-primary/15 border-2 border-background flex items-center justify-center text-[10px] font-bold text-primary"
+                    >
+                      {letter}
                     </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  ))}
                 </div>
-
-                <CardContent className="p-5 space-y-3 flex flex-col flex-1">
-                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary" className="text-xs font-medium">{c.category}</Badge>
-                    <Badge variant="outline" className="text-xs">{c.duration}</Badge>
-                  </div>
-                  <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors duration-200 line-clamp-1">
-                    {c.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">{c.objectives}</p>
-                  <div className="flex items-center text-primary text-sm font-medium pt-2 mt-auto opacity-0 group-hover:opacity-100 translate-x-0 group-hover:translate-x-1 transition-all duration-300">
-                    Start Learning <ArrowRight className="ml-1 h-4 w-4" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* ═══════════════════ TESTIMONIALS ═══════════════════ */}
-      <section ref={testimonialsSection.ref} className="bg-gradient-to-b from-muted/40 to-muted/20 border-t border-border/50">
-        <div className="max-w-6xl mx-auto px-4 py-16">
-          <div className={`text-center mb-12 ${testimonialsSection.visible ? "animate-fade-up" : "opacity-0"}`}>
-            <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-              What Our Learners Say
-            </h2>
-            <p className="text-sm text-muted-foreground mt-2">Real feedback from healthcare professionals</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {testimonials.map((t, i) => (
-              <Card
-                key={t.name}
-                className={`relative overflow-hidden border-border/60 hover:shadow-lg hover:border-primary/20 hover:-translate-y-1 transition-all duration-300 ${testimonialsSection.visible ? "animate-fade-up" : "opacity-0"}`}
-                style={{ animationDelay: `${0.1 + i * 0.12}s` }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/3 to-transparent" />
-                <CardContent className="p-6 space-y-4 relative">
-                  <Quote className="h-8 w-8 text-primary/15 absolute top-4 right-4" />
-                  <div className="flex gap-0.5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-4 w-4 transition-colors duration-200 ${
-                          i < t.rating ? "text-amber-400 fill-amber-400" : "text-border"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-sm text-foreground leading-relaxed italic">"{t.text}"</p>
-                  <div className="pt-3 border-t border-border/60 flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-xs">
-                      {t.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                      <p className="text-xs text-muted-foreground">{t.role}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-semibold text-foreground">
+                    {learners.length}+
+                  </span>{" "}
+                  learners enrolled
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ═══════════════════ CTA BANNER ═══════════════════ */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10" />
-        <div className="absolute top-0 left-1/4 w-64 h-64 bg-primary/8 rounded-full blur-3xl animate-pulse-glow" />
-        <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-accent/8 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: "2s" }} />
-        <div className="max-w-3xl mx-auto px-4 py-20 text-center relative">
-          <h2 className="text-2xl sm:text-3xl font-bold text-foreground mb-4">
-            Ready to Transform Your Learning Experience?
-          </h2>
-          <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
-            Join healthcare professionals already learning on Training Portal. Start your journey today.
-          </p>
-          <Button
-            size="lg"
-            className="text-base px-10 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 hover:-translate-y-0.5"
-            onClick={() => navigate("/register")}
-          >
-            Create An Account
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </div>
-      </section>
-
-      {/* ═══════════════════ FOOTER ═══════════════════ */}
-      <footer className="border-t border-border/50 bg-card/50 py-8">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <GraduationCap className="h-5 w-5 text-primary" />
-            <span className="text-sm font-semibold text-foreground">
+      {/* ══════════════════ FOOTER ══════════════════ */}
+      <footer className="border-t border-border py-8 sm:py-10 px-4 sm:px-6 bg-muted/30">
+        <div className="max-w-6xl mx-auto flex flex-col items-center gap-6 sm:flex-row sm:justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="h-7 w-7 rounded-md bg-primary flex items-center justify-center">
+              <GraduationCap className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <span className="text-sm font-bold text-foreground">
               Training<span className="text-primary">Portal</span>
             </span>
           </div>
-          <p className="text-xs text-muted-foreground">
+
+          <div className="flex items-center gap-4 sm:gap-6">
+            {["Privacy", "Terms", "Contact"].map((link) => (
+              <a
+                key={link}
+                href="#"
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200"
+              >
+                {link}
+              </a>
+            ))}
+          </div>
+
+          <p className="text-xs text-muted-foreground/60 text-center sm:text-right">
             © 2026 Training Portal. All rights reserved.
           </p>
         </div>

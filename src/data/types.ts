@@ -7,7 +7,7 @@ export interface Course {
   duration: string;
   videoUrl: string;
   pdfUrl?: string;
-  coverImage?:string;
+  coverImage?: string;
   quiz: QuizQuestion[];
 }
 
@@ -28,18 +28,26 @@ export interface AnalyticsData {
   topCourses: { id: string; name: string; fullName: string; score: number }[];
   orgProgress: { name: string; completed: number; inProgress: number; total: number; rate: number }[];
   status: { completed: number; inProgress: number; notStarted: number };
+  roleDistribution?: { role: string; count: number }[];
+  categoryAudience?: { name: string; audienceType: string; enrollments: number; completions: number }[];
+  designation?: { name: string; count: number }[];
 }
+
+export type AudienceType = "healthcare_provider" | "internal_staff" | "both";
 
 export interface Category {
   id: string;
   name: string;
+  audienceType: AudienceType;
+  courseCount: number;
   createdAt: string;
 }
 
 export interface Enrollment {
   courseId: string;
-  userId: string;        // nationalId from AuthContext
-  progress: number;      // 0–100
+  userId: string;
+  progress: number;
+  quizScore?: number | null;
   status: "in_progress" | "complete";
   startedAt: string;
   completedAt?: string | null;
@@ -51,26 +59,34 @@ export interface CourseFeedback {
   courseName: string;
   userId: string;
   userName: string;
-  rating: number;        // 1-5
+  rating: number;
   comment: string;
-  submittedAt: string;   // date string
+  submittedAt: string;
 }
 
-export interface Learner {
+export type UserRole = "admin" | "healthcare_provider" | "internal_staff";
+export type Designation = "Tech Support" | "Call Center" | "Customer Delivery";
+
+export interface PlatformUser {
   id: string;
   name: string;
   email: string;
-  nationalId: string;
-  organization: string;
-  county: string;
+  nationalId?: string;
+  organization?: string;
+  county?: string;
+  designation?: Designation | string;
+  role: UserRole;
+  isActive: boolean;
+  createdAt?: string;
   coursesCompleted: number;
   coursesInProgress: number;
 }
 
+
 export interface Testimonial {
   id: string;
   name: string;
-  county?: string;       // joined from users table
+  county?: string;
   role: string;
   rating: number;
   text: string;

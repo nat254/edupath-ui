@@ -157,8 +157,9 @@ const ProfilePage = () => {
     if (!name.trim()) e.name = "Name is required";
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
       e.email = "A valid email is required";
-    if (!organization) e.organization = "Organisation is required";
-    if (!county) e.county = "County is required";
+    if (user.role === "healthcare_provider") {
+      if (!county) e.county = "County is required";
+    }
     return e;
   };
 
@@ -166,7 +167,13 @@ const ProfilePage = () => {
     const e = validateInfo();
     if (Object.keys(e).length) { setInfoErrors(e); return; }
     setInfoSaving(true);
-    const result = await updateProfile({ name: name.trim(), email: email.trim(), organization, county });
+
+    const payload: any = { name: name.trim(), email: email.trim() };
+    if (user.role === "healthcare_provider") {
+      payload.county = county;
+    }
+
+    const result = await updateProfile(payload);
     setInfoSaving(false);
     if (result.success) {
       toast.success("Profile updated successfully");
@@ -250,13 +257,24 @@ const ProfilePage = () => {
                 {user.email}
               </p>
               <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" /> {user.county}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Building2 className="h-3 w-3 shrink-0" />
-                  <span className="truncate max-w-[220px]">{user.organization}</span>
-                </span>
+                {user.role === "healthcare_provider" ? (
+                  <>
+                    <span className="flex items-center gap-1 animate-fade-in">
+                      <MapPin className="h-3 w-3" /> {user.county}
+                    </span>
+                    <span className="flex items-center gap-1 animate-fade-in">
+                      <Building2 className="h-3 w-3 shrink-0" />
+                      <span className="truncate max-w-[220px]">{user.organization}</span>
+                    </span>
+                  </>
+                ) : (
+                  user.designation && (
+                    <span className="flex items-center gap-1 animate-fade-in">
+                      <Building2 className="h-3 w-3 shrink-0" />
+                      <span>{user.designation}</span>
+                    </span>
+                  )
+                )}
               </div>
             </div>
           </div>
@@ -283,22 +301,47 @@ const ProfilePage = () => {
             <CardContent className="space-y-5">
               {/* Read-only fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                    National ID
-                  </Label>
-                  <div className="flex items-center h-10 px-3 rounded-md border bg-muted/40 text-sm text-muted-foreground select-all">
-                    {user.nationalId}
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Role
-                  </Label>
-                  <div className="flex items-center h-10 px-3 rounded-md border bg-muted/40 text-sm text-muted-foreground capitalize">
-                    {user.role}
-                  </div>
-                </div>
+                {user.role === "healthcare_provider" ? (
+                  <>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                        National ID
+                      </Label>
+                      <div className="flex items-center h-10 px-3 rounded-md border bg-muted/40 text-sm text-muted-foreground select-all">
+                        {user.nationalId}
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                        Role
+                      </Label>
+                      <div className="flex items-center h-10 px-3 rounded-md border bg-muted/40 text-sm text-muted-foreground capitalize">
+                        {user.role.replace(/_/g, " ")}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {user.designation && (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                          Designation
+                        </Label>
+                        <div className="flex items-center h-10 px-3 rounded-md border bg-muted/40 text-sm text-muted-foreground">
+                          {user.designation}
+                        </div>
+                      </div>
+                    )}
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                        Role
+                      </Label>
+                      <div className="flex items-center h-10 px-3 rounded-md border bg-muted/40 text-sm text-muted-foreground capitalize">
+                        {user.role.replace(/_/g, " ")}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <Separator />
@@ -346,47 +389,41 @@ const ProfilePage = () => {
                   )}
                 </div>
 
-                {/* Organisation */}
-                <div className="space-y-1.5">
-                  <Label className="flex items-center gap-1.5">
-                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" /> Organisation
-                  </Label>
-                  <SearchableSelect
-                    value={organization}
-                    onValueChange={(v) => {
-                      setOrganization(v);
-                      setInfoErrors((p) => ({ ...p, organization: "" }));
-                    }}
-                    options={orgOptions}
-                    placeholder="Select organisation"
-                    emptyMessage="No organisation found."
-                    triggerClassName={cn(infoErrors.organization && "border-destructive")}
-                  />
-                  {infoErrors.organization && (
-                    <p className="text-xs text-destructive">{infoErrors.organization}</p>
-                  )}
-                </div>
+                {/* Organisation and County for Healthcare Providers only */}
+                {user.role === "healthcare_provider" && (
+                  <>
+                    {/* Organisation — read-only */}
+                    <div className="space-y-1.5">
+                      <Label className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-wide">
+                        <Building2 className="h-3.5 w-3.5" /> Organisation
+                      </Label>
+                      <div className="flex items-center h-10 px-3 rounded-md border bg-muted/40 text-sm text-muted-foreground truncate">
+                        {user.organization || "—"}
+                      </div>
+                    </div>
 
-                {/* County */}
-                <div className="space-y-1.5">
-                  <Label className="flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> County
-                  </Label>
-                  <SearchableSelect
-                    value={county}
-                    onValueChange={(v) => {
-                      setCounty(v);
-                      setInfoErrors((p) => ({ ...p, county: "" }));
-                    }}
-                    options={countyOptions}
-                    placeholder="Select county"
-                    emptyMessage="No county found."
-                    triggerClassName={cn(infoErrors.county && "border-destructive")}
-                  />
-                  {infoErrors.county && (
-                    <p className="text-xs text-destructive">{infoErrors.county}</p>
-                  )}
-                </div>
+                    {/* County */}
+                    <div className="space-y-1.5">
+                      <Label className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> County
+                      </Label>
+                      <SearchableSelect
+                        value={county}
+                        onValueChange={(v) => {
+                          setCounty(v);
+                          setInfoErrors((p) => ({ ...p, county: "" }));
+                        }}
+                        options={countyOptions}
+                        placeholder="Select county"
+                        emptyMessage="No county found."
+                        triggerClassName={cn(infoErrors.county && "border-destructive")}
+                      />
+                      {infoErrors.county && (
+                        <p className="text-xs text-destructive">{infoErrors.county}</p>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="flex justify-end pt-2">

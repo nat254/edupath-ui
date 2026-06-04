@@ -4,51 +4,58 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 220 20% 10%;
+    /* ── Core surfaces ─────────────────────────── */
+    --background: 0 0% 100%;                  /* #FFFFFF pure white */
+    --foreground: 222 47% 11%;                /* #0F172A slate-900 */
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 10%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 215 90% 50%;
+    /* ── Primary accent — vivid blue ───────────── */
+    --primary: 224 98% 58%;                   /* #2563EB */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 20% 95%;
-    --secondary-foreground: 220 20% 20%;
+    /* ── Secondary / neutral surfaces ─────────── */
+    --secondary: 210 40% 96%;                 /* #F1F5F9 slate-100 */
+    --secondary-foreground: 222 47% 30%;
 
-    --muted: 210 15% 93%;
-    --muted-foreground: 220 10% 45%;
+    --muted: 210 40% 96%;                     /* #F1F5F9 */
+    --muted-foreground: 215 16% 47%;          /* #64748B slate-500 */
 
-    --accent: 160 60% 45%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222 47% 30%;
 
-    --destructive: 0 72% 55%;
+    /* ── Semantic colours ──────────────────────── */
+    --destructive: 0 72% 51%;                 /* #DC2626 red-600 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 20% 88%;
-    --input: 214 20% 88%;
-    --ring: 215 90% 50%;
-
-    --radius: 0.625rem;
-
-    --sidebar-background: 220 20% 12%;
-    --sidebar-foreground: 210 15% 85%;
-    --sidebar-primary: 215 90% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 18% 18%;
-    --sidebar-accent-foreground: 210 15% 90%;
-    --sidebar-border: 220 15% 20%;
-    --sidebar-ring: 215 90% 55%;
-
-    --success: 160 60% 45%;
+    --success: 142 71% 45%;                   /* #10B981 emerald-500 */
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
+    --warning: 38 92% 50%;                    /* #F59E0B amber-500 */
     --warning-foreground: 0 0% 100%;
-    --info: 215 90% 50%;
+    --info: 224 98% 58%;
     --info-foreground: 0 0% 100%;
+
+    /* ── Form / border chrome ──────────────────── */
+    --border: 214 32% 91%;                    /* #E2E8F0 slate-200 */
+    --input: 214 32% 91%;
+    --ring: 224 98% 58%;
+
+    /* ── Radius scale ──────────────────────────── */
+    --radius: 0.75rem;                        /* 12px */
+
+    /* ── Sidebar — premium dark navy ───────────── */
+    --sidebar-background: 222 47% 7%;         /* #090F1D deep navy */
+    --sidebar-foreground: 214 32% 75%;
+    --sidebar-primary: 224 98% 68%;           /* lighter blue on dark */
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 47% 13%;
+    --sidebar-accent-foreground: 214 32% 85%;
+    --sidebar-border: 222 47% 14%;
+    --sidebar-ring: 224 98% 68%;
   }
 }
 
@@ -56,14 +63,49 @@
   * {
     @apply border-border;
   }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    @apply bg-background text-foreground;
+    font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Smooth focus ring */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
   }
 }
 
 @layer utilities {
+  /* Glass card — white variant */
   .glass-card {
-    @apply bg-card/80 backdrop-blur-sm border border-border/50 shadow-sm;
+    @apply bg-white/80 backdrop-blur-md border border-white/60 shadow-sm;
   }
+
+  /* Subtle dot grid texture */
+  .dot-grid {
+    background-image: radial-gradient(circle, hsl(var(--foreground) / 0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+
+  /* Premium card with depth */
+  .card-elevated {
+    @apply bg-white rounded-2xl shadow-[0_1px_3px_0_rgb(0,0,0,0.06),0_4px_24px_0_rgb(0,0,0,0.04)] border border-border/60;
+  }
+
+  /* Auth page background */
+  .auth-bg {
+    @apply min-h-screen bg-white relative overflow-hidden;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, hsl(var(--primary) / 0.07), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 100%, hsl(var(--primary) / 0.04), transparent);
+  }
+
+  /* Poppins weight helpers */
+  .font-poppins { font-family: 'Poppins', system-ui, sans-serif; }
 }

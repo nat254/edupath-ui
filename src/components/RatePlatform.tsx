@@ -67,7 +67,7 @@ const RatePlatform = () => {
   }
 
   return (
-    <Card>
+    <Card className="rounded-sm">
       <CardContent className="p-6 space-y-4">
         <div className="flex items-center gap-2">
           <MessageSquareHeart className="h-5 w-5 text-primary" />

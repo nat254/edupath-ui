@@ -13,6 +13,7 @@ function emit() {
 function fromApi(row: {
   courseId: string;
   progress: number;
+  quizScore?: number | null;
   enrolledAt: string;
   completedAt: string | null;
   _userId: string;
@@ -21,6 +22,7 @@ function fromApi(row: {
     courseId: row.courseId,
     userId: row._userId,
     progress: row.progress,
+    quizScore: row.quizScore ?? null,
     status: row.completedAt !== null ? "complete" : row.progress >= 100 ? "complete" : "in_progress",
     startedAt: row.enrolledAt,
     completedAt: row.completedAt,
@@ -47,6 +49,7 @@ export const enrollmentStore = {
       const rows: Array<{
         courseId: string;
         progress: number;
+        quizScore?: number | null;
         enrolledAt: string;
         completedAt: string | null;
       }> = await res.json();
@@ -101,8 +104,9 @@ export const enrollmentStore = {
    * Update progress (0–100) for a course.
    * - progress 50  → video watched
    * - progress 100 → quiz complete, sets completed_at on backend
+   * - quizScore    → optional; the actual quiz percentage (0–100) to persist
    */
-  async updateProgress(userId: string, courseId: string, progress: number): Promise<void> {
+  async updateProgress(userId: string, courseId: string, progress: number, quizScore?: number): Promise<void> {
     const clamped = Math.min(100, Math.max(0, Math.round(progress)));
 
     // Optimistic update
@@ -111,6 +115,7 @@ export const enrollmentStore = {
       return {
         ...e,
         progress: clamped,
+        quizScore: quizScore !== undefined ? quizScore : e.quizScore,
         status: clamped >= 100 ? "complete" : "in_progress",
       };
     });
@@ -120,7 +125,7 @@ export const enrollmentStore = {
       const res = await fetch(`${BASE}/enrollments/progress`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, courseId, progress: clamped }),
+        body: JSON.stringify({ userId, courseId, progress: clamped, quizScore }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({ error: res.statusText }));

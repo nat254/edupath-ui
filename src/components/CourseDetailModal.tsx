@@ -42,18 +42,18 @@ const CourseDetailModal = ({
 
   if (!course) return null;
 
-  const userId = user?.nationalId ?? "";
+  const userId = user?.id ?? "";
   const isEnrolled = userId
     ? enrollmentStore.isEnrolled(userId, course.id)
     : false;
 
-  const handleStartOrContinue = () => {
+  const handleStartOrContinue = async () => {
     if (!userId) {
       toast.error("Please log in to start this course.");
       return;
     }
     if (!isEnrolled) {
-      enrollmentStore.enroll(userId, course.id);
+      await enrollmentStore.enroll(userId, course.id);
       toast.success(`"${course.title}" added to My Learning!`);
     }
     onOpenChange(false);
